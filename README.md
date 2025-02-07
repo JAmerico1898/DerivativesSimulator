@@ -1,2 +1,2 @@
 # DerivativesSimmulator
-Welcome to our Derivatives Simulator, an interactive tool designed to help you explore and understand the mechanics behind forwards, futures, and swaps.
+Welcome to our Derivatives Simulator, an interactive tool designed to help you explore and understand the mechanics behind forwards, futures, and swaps. By combining real-time market data with user-friendly controls, this app allows you to model hypothetical trading scenarios and see how each contract type behaves under different conditions. Whether you’re a student looking to reinforce your learning or a seasoned professional aiming to test new strategies, our Derivatives Simulator offers an immersive and educational experience in the world of financial derivatives.
