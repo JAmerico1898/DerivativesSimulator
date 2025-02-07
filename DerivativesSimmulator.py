@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 st.markdown("<h5 style='text-align: center;'>Escolha sua Opção</h5>", unsafe_allow_html=True)
-st.markdown('---')
 options = ["Forward", "Futures", "Swaps"]
 
 # Create three columns with the middle column wider
@@ -17,6 +16,8 @@ col1, col2, col3 = st.columns([1, 2, 1])
 # Place the radio button in the middle column to center it
 with col2:
     geral = st.radio("", options, index=0, disabled=False, horizontal=True, captions=None)
+
+st.markdown('---')
     
 if geral == "Swaps":
 
