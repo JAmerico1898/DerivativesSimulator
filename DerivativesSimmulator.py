@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 st.markdown("<h5 style='text-align: center;'>Escolha sua Opção</h5>", unsafe_allow_html=True)
+st.markdown('---')
 options = ["Forward", "Futures", "Swaps"]
 
 # Create three columns with the middle column wider
