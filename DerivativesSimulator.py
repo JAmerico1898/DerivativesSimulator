@@ -2276,11 +2276,8 @@ elif geral == "Options":
         Where d₁ and d₂ are calculated based on the inputs, and N() is the cumulative distribution function of the standard normal distribution.
         """)
 
-    # Add a footer
-    st.markdown("""
-    <div class="small-text" style="text-align: center; margin-top: 3rem;">
-        <p>Options Teaching Tool - Created with Streamlit</p>
-        <p>Note: This tool is for educational purposes only. Real-world trading involves additional complexities.</p>
-        <p>Prof. José Américo - Coppead
-    </div>
-    """, unsafe_allow_html=True)
+# Footer
+st.divider()
+st.caption("© 2025 Derivatives Teaching Tool | Developed for educational purposes")
+st.caption("Note: This tool is for educational purposes only. Real-world trading involves additional complexities. ")
+st.caption("Prof. José Américo – Coppead")
