@@ -255,7 +255,7 @@ if geral == "Swaps":
 
     Results:
     - Exposure Result: R$ {results['exposure_result']:,.2f}
-    - Hedge Result: R$ {results['hedge_result']:,.2f}
+    - Swap P&L: R$ {results['hedge_result']:,.2f}
     - Total Result: R$ {results['total_result']:,.2f}
 
     Analysis:
@@ -312,7 +312,7 @@ if geral == "Swaps":
         
         if exposure_indexer == IndexerType.EXCHANGE_RATE.value:
             exposure_exchange_rate = st.number_input(
-                "Initial Exchange Rate (R$/US$)",
+                "Initial Exchange Rate (BRL/USD)",
                 min_value=0.0,
                 value=5.0,
                 step=0.1,
@@ -397,7 +397,7 @@ if geral == "Swaps":
             liability_indexer == IndexerType.EXCHANGE_RATE.value or 
             exposure_indexer == IndexerType.EXCHANGE_RATE.value):
             exchange_rate_maturity = st.number_input(
-                "Exchange Rate at Maturity (R$/US$)",
+                "Exchange Rate at Maturity (BRL/USD)",
                 min_value=0.0,
                 value=5.2,
                 step=0.1,
@@ -447,14 +447,14 @@ if geral == "Swaps":
         
         with col2:
             st.metric(
-                "Hedge Result",
+                "Swap P&L",
                 f"R$ {results['hedge_result']:,.2f}",
                 delta=None
             )
         
         with col3:
             st.metric(
-                "Total Result",
+                "Total Result / Net Position",
                 f"R$ {results['total_result']:,.2f}",
                 delta=None
             )
@@ -607,62 +607,148 @@ elif geral == "Forward":
     L_rate_percent = st.slider("Effective Market Rate (L) for the Period [%]", min_value=0.0, max_value=15.0, value=1.5, step=0.1)
     L = L_rate_percent / 100.0
 
-    st.subheader("Calculated Results")
-    st.markdown("#### FWD (Forward) Payoff")
-
-    # Calculate the effective fixed rate for the period from the annualized FWD fixed rate, using compound interest.
-    effective_fixed_rate = (1 + F)**delta - 1
-
-    # Compute the FWD payoff using the new formula
-    FWD_payoff = notional * (L - effective_fixed_rate)
-    st.write(f"**FWD Payoff:** ${FWD_payoff:,.2f}")
 
     # Compute the exposure’s cost
     if exposure_type == "Floating Rate Exposure":
+
+        st.subheader("Calculated Results")
+        st.markdown("#### FWD (Forward) Payoff")
+
+        # Calculate the effective fixed rate for the period from the annualized FWD fixed rate, using compound interest.
+        effective_fixed_rate = (1 + F)**delta - 1
+
+        # Compute the FWD payoff using the new formula
+        FWD_payoff = notional * (L - effective_fixed_rate)
+        st.write(f"**FWD Payoff:** ${FWD_payoff:,.2f}")
+
         # For a floating exposure, the cost is based on the effective rate L.
-        exposure_cost = notional * L
+        exposure_cost = - notional * L
         st.write(f"**Floating Exposure Cost:** ${exposure_cost:,.2f}")
+
+        # The net combined outcome (hedged portfolio)
+        net_outcome = exposure_cost + FWD_payoff
+        st.markdown("#### Net Hedged Outcome")
+        st.write(f"**Net Outcome:** ${net_outcome:,.2f}")
+
+
     elif exposure_type == "Fixed Rate Exposure":
+
+        st.subheader("Calculated Results")
+        st.markdown("#### FWD (Forward) Payoff")
+
+        # Calculate the effective fixed rate for the period from the annualized FWD fixed rate, using compound interest.
+        effective_fixed_rate = (1 + F)**delta - 1
+
+        # Compute the FWD payoff using the new formula
+        FWD_payoff = notional * (effective_fixed_rate - L)
+        st.write(f"**FWD Payoff:** ${FWD_payoff:,.2f}")
+
         # For a fixed exposure, adjust the annualized fixed rate using compound interest.
         effective_fixed_exposure_rate = (1 + fixed_exposure_rate)**delta - 1
-        exposure_cost = notional * effective_fixed_exposure_rate
+        exposure_cost = - notional * effective_fixed_exposure_rate
         st.write(f"**Fixed Exposure Cost:** ${exposure_cost:,.2f}")
 
-    # The net combined outcome (hedged portfolio)
-    net_outcome = exposure_cost - FWD_payoff
-    st.markdown("#### Net Hedged Outcome")
-    st.write(f"**Net Outcome:** ${net_outcome:,.2f}")
+        # The net combined outcome (hedged portfolio)
+        net_outcome = exposure_cost + FWD_payoff
+        st.markdown("#### Net Hedged Outcome")
+        st.write(f"**Net Outcome:** ${net_outcome:,.2f}")
 
-    st.markdown("---")
-    st.markdown(r"""
-    ### Graphical Overview
 
-    The graph below shows how the FWD payoff, the exposure cost, and the net outcome vary as the effective market rate \(L\) for the period changes.
-    A vertical dashed line indicates the currently selected market rate.
-    """)
-
+   
     # Prepare a range of effective market rates for plotting
     L_values = np.linspace(0.0, 0.15, 300)  # from 0% to 15% effective rate for the period
-    FWD_payoffs = notional * (L_values - ((1 + F)**delta - 1))
 
     if exposure_type == "Floating Rate Exposure":
-        exposure_costs = notional * L_values
+        exposure_costs = - notional * L_values
+        FWD_payoffs = notional * (L_values - ((1 + F)**delta - 1))        
     elif exposure_type == "Fixed Rate Exposure":
-        exposure_costs = notional * ((1 + fixed_exposure_rate)**delta - 1) * np.ones_like(L_values)
+        exposure_costs = - notional * ((1 + fixed_exposure_rate)**delta - 1) * np.ones_like(L_values)
+        FWD_payoffs = notional * (((1 + F)**delta - 1) - L_values)        
 
-    net_outcomes = exposure_costs - FWD_payoffs
+    net_outcomes = exposure_costs + FWD_payoffs
 
-    # Plot the curves
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(L_values * 100, FWD_payoffs, label="FWD Payoff", color="C1")
-    ax.plot(L_values * 100, exposure_costs, label="Exposure Cost", color="C2")
-    ax.plot(L_values * 100, net_outcomes, label="Net Outcome", color="C0", linestyle="--")
-    ax.axvline(L_rate_percent, color="gray", linestyle="--", label=f"Current L = {L_rate_percent:.1f}%")
-    ax.set_xlabel("Effective Market Rate (L) for the Period (%)")
-    ax.set_ylabel("Amount ($)")
-    ax.legend()
-    ax.grid(True)
-    st.pyplot(fig)
+    # Create Plotly figure
+    import plotly.graph_objects as go
+
+    fig = go.Figure()
+
+    # Add traces with hover templates
+    fig.add_trace(go.Scatter(
+        x=L_values * 100,
+        y=FWD_payoffs,
+        mode='lines',
+        name='FWD Payoff',
+        line=dict(color='#ff7f0e'),  # C1 color equivalent
+        hovertemplate='Rate: %{x:.2f}%<br>FWD Payoff: $%{y:,.2f}<extra></extra>'
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=L_values * 100,
+        y=exposure_costs,
+        mode='lines',
+        name='Exposure Cost',
+        line=dict(color='#2ca02c'),  # C2 color equivalent
+        hovertemplate='Rate: %{x:.2f}%<br>Exposure Cost: $%{y:,.2f}<extra></extra>'
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=L_values * 100,
+        y=net_outcomes,
+        mode='lines',
+        name='Net Outcome',
+        line=dict(color='#1f77b4', dash='dash'),  # C0 color with dash
+        hovertemplate='Rate: %{x:.2f}%<br>Net Outcome: $%{y:,.2f}<extra></extra>'
+    ))
+
+    # Add vertical line for current rate
+    fig.add_vline(
+        x=L_rate_percent, 
+        line=dict(color="gray", dash="dash")
+    )
+
+    # Add annotation for the vertical line - moved to top of the chart
+    fig.add_annotation(
+        x=L_rate_percent,
+        y=max(max(FWD_payoffs), max(net_outcomes)) * 0.95,  # Position at 95% of the maximum y value
+        text=f"Current L = {L_rate_percent:.1f}%",
+        showarrow=False,
+        yanchor="bottom",
+        xanchor="center",
+        bgcolor="rgba(255, 255, 255, 0.8)",  # Semi-transparent white background
+        bordercolor="black",
+        borderwidth=1
+    )
+
+    # Update layout
+    fig.update_layout(
+        xaxis_title="Effective Market Rate (L) for the Period (%)",
+        yaxis_title="Amount ($)",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        hovermode="x unified",
+        xaxis=dict(showgrid=True),
+        yaxis=dict(showgrid=True)
+    )
+
+    # Display the figure in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     st.markdown("---")
     st.markdown(r"""
@@ -742,7 +828,7 @@ elif geral == "Futures":
     
     def calculate_theoretical_price(spot_price, rate, days=5):
         T = days/252
-        return spot_price * np.exp(rate * T)
+        return round(spot_price * (1+rate)**T, 2)
 
     def simulate_daily_prices(initial_price, final_price, days=5):
         """Generate random daily prices between initial and final price"""
@@ -793,7 +879,6 @@ elif geral == "Futures":
         This simulator shows how a oil future contract (FWD) develops assuming that:
 
         - The future contract is 1,000 oil barrels
-        - The future contract can be portioned
         - The oil contract expires in 5 days 
         - the contract will be kept for 5 trading days until settlement by difference
         - The initial margin is 10% of the notional value
@@ -835,7 +920,7 @@ elif geral == "Futures":
             with col2:
                 st.metric("Futures P&L", f"${futures_pnl:.2f}")
             with col3:
-                st.metric("Hedge Result", f"${net_result:.2f}")
+                st.metric("Net Result", f"${net_result:.2f}")
             
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=margin_df['Day'], y=margin_df['Balance'],
@@ -862,7 +947,7 @@ elif geral == "Futures":
             """)
             
             if contract_type == "Hedge":
-                st.write(f"- The hedge result: ${net_result:.2f}")
+                st.write(f"- Swap P&L: ${net_result:.2f}")
 
     if __name__ == "__main__":
         main()
@@ -2278,6 +2363,5 @@ elif geral == "Options":
 
 # Footer
 st.divider()
-st.caption("© 2025 Derivatives Teaching Tool | Developed for educational purposes")
-st.caption("Note: This tool is for educational purposes only. Real-world trading involves additional complexities. ")
-st.caption("Prof. José Américo – Coppead")
+st.caption("© 2025 Derivatives Teaching Tool | Prof. José Américo – Coppead")
+st.caption("Note: This tool is for educational purposes only. Real-world trading involves additional complexities.")
