@@ -591,20 +591,20 @@ elif geral == "Forward":
     delta = st.number_input(r"Time Period \(Delta\) (in years)", min_value=0.01, max_value=2.0, step=0.05, value=0.25)
 
     # Forward (FWD) fixed rate (annualized)
-    F_rate_percent = st.number_input("Forward (FWD) Fixed Rate [%] (annualized)", min_value=0.0, max_value=20.0, step=0.1, value=5.0)
+    F_rate_percent = st.number_input("Forward (FWD) Fixed Rate [%] (annualized)", min_value=0.0, max_value=20.0, step=0.1, value=5.0, help="Cotação de mercado do contrato a termo, ou expectativa de comportamento do DI para o período")
     F = F_rate_percent / 100.0
 
     # Exposure type: Floating vs. Fixed
-    exposure_type = st.selectbox("Hedged Exposure Type", ("Floating Rate Exposure", "Fixed Rate Exposure"))
+    exposure_type = st.selectbox("Hedged Exposure Type", ("Floating Rate Exposure", "Fixed Rate Exposure"), help="Exposição original a ser hedgeada. Será sempre um passivo.")
     if exposure_type == "Fixed Rate Exposure":
-        fixed_exposure_rate_percent = st.number_input("Fixed Exposure Rate [%] (annualized)", min_value=0.0, max_value=20.0, step=0.1, value=5.0)
+        fixed_exposure_rate_percent = st.number_input("Fixed Exposure Rate [%] (annualized)", min_value=0.0, max_value=20.0, step=0.1, value=5.0, help="Taxa pré da exposição original a ser hedgeada.")
         fixed_exposure_rate = fixed_exposure_rate_percent / 100.0
 
     st.header("2. Vary the Market Rate")
 
     # Slider for the effective market (floating) rate L for the period.
     # Note: Here L is the effective rate for the entire period (e.g., a quarterly effective rate).
-    L_rate_percent = st.slider("Effective Market Rate (L) for the Period [%]", min_value=0.0, max_value=15.0, value=1.5, step=0.1)
+    L_rate_percent = st.slider("Effective Market Rate (L) for the Period [%]", min_value=0.0, max_value=15.0, value=1.5, step=0.1, help = "Taxa efetiva de juros (DI) do período.")
     L = L_rate_percent / 100.0
 
 
@@ -679,7 +679,7 @@ elif geral == "Forward":
         mode='lines',
         name='FWD Payoff',
         line=dict(color='#ff7f0e'),  # C1 color equivalent
-        hovertemplate='Rate: %{x:.2f}%<br>FWD Payoff: $%{y:,.2f}<extra></extra>'
+        hovertemplate='FWD Payoff: $%{y:,.2f}<extra></extra>'
     ))
 
     fig.add_trace(go.Scatter(
@@ -688,7 +688,7 @@ elif geral == "Forward":
         mode='lines',
         name='Exposure Cost',
         line=dict(color='#2ca02c'),  # C2 color equivalent
-        hovertemplate='Rate: %{x:.2f}%<br>Exposure Cost: $%{y:,.2f}<extra></extra>'
+        hovertemplate='Exposure Cost: $%{y:,.2f}<extra></extra>'
     ))
 
     fig.add_trace(go.Scatter(
@@ -697,7 +697,7 @@ elif geral == "Forward":
         mode='lines',
         name='Net Outcome',
         line=dict(color='#1f77b4', dash='dash'),  # C0 color with dash
-        hovertemplate='Rate: %{x:.2f}%<br>Net Outcome: $%{y:,.2f}<extra></extra>'
+        hovertemplate='Net Outcome: $%{y:,.2f}<extra></extra>'
     ))
 
     # Add vertical line for current rate
