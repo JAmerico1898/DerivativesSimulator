@@ -947,7 +947,7 @@ elif geral == "Futures":
             """)
             
             if contract_type == "Hedge":
-                st.write(f"- Swap P&L: ${net_result:.2f}")
+                st.write(f"- Future P&L: ${net_result:.2f}")
 
     if __name__ == "__main__":
         main()
