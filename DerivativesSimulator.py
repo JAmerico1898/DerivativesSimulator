@@ -1959,7 +1959,7 @@ elif st.session_state.step == "Derivativos":
                     
                     sigma = st.slider("Volatility (σ, %)", min_value=5.0, max_value=100.0, value=20.0, step=5.0, help="Annualized volatility of the underlying asset") / 100
                     
-                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=10.0, value=2.0, step=0.5, help="Annual risk-free interest rate") / 100
+                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=16.0, value=7.0, step=0.25, help="Annual risk-free interest rate") / 100
                     
                     # Calculate option premium
                     premium = black_scholes(S, K, T, r, sigma, option_type.lower())
@@ -2254,8 +2254,8 @@ elif st.session_state.step == "Derivativos":
                 
                 with col2:
                     T = st.slider("Time to Maturity (years)", min_value=0.1, max_value=2.0, value=1.0, step=0.1, key="strat_T")
-                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=10.0, value=2.0, step=0.5, key="strat_r") / 100
-                
+                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=16.0, value=7.0, step=0.25, key="strat_r") / 100
+
                 # Strategy-specific parameters and functions
                 if "Long Call" in selected_strategy:
                     K_call = st.slider("Call Strike Price", min_value=50.0, max_value=150.0, value=100.0, step=5.0, key="K_call")
