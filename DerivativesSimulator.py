@@ -1618,7 +1618,7 @@ elif st.session_state.step == "Derivativos":
             # Linha horizontal mostrando a cotação à vista (apenas ilustrativa)
             fig.add_trace(go.Scatter(
                 x=periodos,
-                y=[cotacao_vista, cotacao_vista],
+                y=[cotacao_vista, cotacao_vencimento],
                 mode='lines+markers',
                 name='Cotação à Vista (Referência)',
                 line=dict(color='#95a5a6', width=2, dash='dash'),
