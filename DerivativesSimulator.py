@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
@@ -9,7 +10,6 @@ from enum import Enum
 from scipy.stats import norm
 import math
 import random
-
 
 st.markdown("<h2 style='text-align: center;'>📊 Simulador de Derivativos</h2>", unsafe_allow_html=True)
 st.markdown("<h3 style='text-align: center;'>Ferramenta com fins pedagógicos</h3>", unsafe_allow_html=True)
@@ -787,10 +787,10 @@ elif st.session_state.step == "Derivativos":
     
     col1, col2, col3 = st.columns([4, 1, 4])
     with col1:
-        st.button("Forwards", type='primary', use_container_width=True, on_click=select_option, args=("Forwards",))
+        st.button("Termos", type='primary', use_container_width=True, on_click=select_option, args=("Termos",))
             
     with col3:
-        st.button("Futures", type='primary', use_container_width=True, on_click=select_option, args=("Futures",))
+        st.button("Futuros", type='primary', use_container_width=True, on_click=select_option, args=("Futuros",))
 
     col4, col5, col6 = st.columns([4, 1, 4])
     with col4:
@@ -1345,400 +1345,849 @@ elif st.session_state.step == "Derivativos":
             """)
 
         # Instructions based on selection
-        if st.session_state.selected_option == "Forwards":
+        if st.session_state.selected_option == "Termos":
 
-            st.title("Forward Contract / FWD Hedging Simulator (Brazilian Practice)")
+            # CSS customizado para melhorar o visual
+            st.markdown("""
+            <style>
+                .main > div {
+                    padding-top: 2rem;
+                }
+                
+                .stSelectbox > div > div {
+                    background-color: #f8f9fa;
+                }
+                
+                .stNumberInput > div > div {
+                    background-color: #f8f9fa;
+                }
 
-            st.markdown(r"""
-            This simulator demonstrates how a forward contract (FWD) can be used to hedge a liability exposure  under Brazilian practice, where:
+                .metric-container {
+                    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+                    padding: 0.5rem;
+                    border-radius: 10px;
+                    color: white;
+                    margin: 0.8rem 0;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+                
+                .metric-value {
+                    font-size: 1.3rem;
+                    font-weight: bold;
+                    margin: 0.3rem 0;
+                }
+                
+                .metric-label {
+                    font-size: 0.95rem;
+                    opacity: 1;
+                }
+                
+                .profit-positive {
+                    color: green;
+                }
+                
+                .profit-negative {
+                    color: gold;
+                }
+                
+                .info-box {
+                    background: #e8f6ff;
+                    padding: 1.5rem;
+                    border-radius: 10px;
+                    border-left: 4px solid #3498db;
+                    margin: 1rem 0;
+                }
+                
+                .formula-box {
+                    background: #f8f9fa;
+                    padding: 0.3rem;
+                    border-radius: 8px;
+                    border-left: 1px solid #17a2b8;
+                    font-family: 'Courier New', monospace;
+                    margin: 0.2rem 0;
+                }
+                
+                .header-container {
+                    text-align: center;
+                    padding: 1rem 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    margin: -2rem -3rem 2rem -3rem;
+                    border-radius: 0 0 20px 20px;
+                    color: white;
+                }
+                
+                .header-title {
+                    font-size: 3rem;
+                    font-weight: 300;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .header-subtitle {
+                    font-size: 1.2rem;
+                    opacity: 0.9;
+                }
+                
+                .currency-label {
+                    font-size: 0.9rem;
+                    color: #666;
+                    margin-top: 0.2rem;
+                }
+            </style>
+            """, unsafe_allow_html=True)
 
-            - The market (floating) rate \(L\) is given as the **effective rate for the period** (i.e. the accumulation factor is \(1+L\)).
-            - The fixed rate is adjusted using **compound interest**. For an annualized forward rate \(F\), the effective fixed rate for a period of \(Delta\) years is
-            \[
-            (1+F)^Delta - 1.
-            \]
+            # Funções auxiliares
+            def formatar_moeda_brl(valor):
+                """Formata valor como moeda brasileira"""
+                return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-            The FWD payoff is therefore calculated as:
-            """)
+            def formatar_moeda_usd(valor):
+                """Formata valor como dólares americanos"""
+                return f"US$ {valor:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-            st.latex(r'\text{FWD Payoff} = N\left( L - \Big[(1+F)^\Delta - 1\Big] \right)')
+            def formatar_cotacao(valor):
+                """Formata cotação com 2 casas decimais"""
+                return f"R$ {valor:.2f}"
 
-            ("""
-            where:
-            - \(N\) is the notional amount,
-            - \(L\) is the effective market (floating) rate for the period,
-            - \(F\) is the annualized forward (fixed) rate, and
-            - \(Delta\) is the time period (in years).
-            """)
+            def calcular_resultado_ndf(operacao, cotacao_contratacao, cotacao_vencimento, valor_nocional_usd):
+                """
+                Calcula o resultado da operação NDF conforme as fórmulas:
+                Compra: (Cotação Vencimento - Cotação Contratação) × N
+                Venda: (Cotação Contratação - Cotação Vencimento) × N
+                """
+                if operacao == "Compra":
+                    resultado = (cotacao_vencimento - cotacao_contratacao) * valor_nocional_usd
+                else:  # Venda
+                    resultado = (cotacao_contratacao - cotacao_vencimento) * valor_nocional_usd
+                
+                return resultado
 
-            st.header("1. Define Contract Parameters")
+            def calcular_valor_inicial_brl(cotacao_contratacao, valor_nocional_usd):
+                """Calcula valor inicial em reais para referência"""
+                return cotacao_contratacao * valor_nocional_usd
 
-            # Notional and period length
-            notional = st.number_input("Notional Amount ($)", min_value=10000, step=10000, value=1_000_000)
-            delta = st.number_input(r"Time Period \(Delta\) (in years)", min_value=0.01, max_value=2.0, step=0.05, value=0.25)
+            def calcular_valor_final_brl(cotacao_vencimento, valor_nocional_usd):
+                """Calcula valor final em reais para referência"""
+                return cotacao_vencimento * valor_nocional_usd
 
-            # Forward (FWD) fixed rate (annualized)
-            F_rate_percent = st.number_input("Forward (FWD) Fixed Rate [%] (annualized)", min_value=0.0, max_value=20.0, step=0.1, value=5.0, help="Cotação de mercado do contrato a termo, ou expectativa de comportamento do DI para o período")
-            F = F_rate_percent / 100.0
+            # Cabeçalho da aplicação
+            st.markdown("""
+            <div class="header-container">
+                <h1 class="header-title">💱 Simulador de Contratos NDF</h1>
+                <p class="header-subtitle">Ferramenta educacional para entender Non-Deliverable Forwards de USD/BRL</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-            # Exposure type: Floating vs. Fixed
-            exposure_type = st.selectbox("Hedged Exposure Type", ("Floating Rate Exposure", "Fixed Rate Exposure"), help="Exposição original a ser hedgeada. Será sempre um passivo.")
-            if exposure_type == "Fixed Rate Exposure":
-                fixed_exposure_rate_percent = st.number_input("Fixed Exposure Rate [%] (annualized)", min_value=0.0, max_value=20.0, step=0.1, value=5.0, help="Taxa pré da exposição original a ser hedgeada.")
-                fixed_exposure_rate = fixed_exposure_rate_percent / 100.0
+            # Caixa de informações
+            st.markdown("""
+            <div class="info-box">
+                <h3>ℹ️ O que é um NDF?</h3>
+                <p>O <strong>NDF (Non-Deliverable Forward)</strong> é um contrato a termo de câmbio com liquidação financeira. 
+                A diferença entre a cotação acordada e a cotação de referência no vencimento é liquidada em moeda local (reais), 
+                <strong>sem entrega física</strong> da moeda americana.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-            st.header("2. Vary the Market Rate")
+            # Layout de inputs
+            st.markdown("## 🎯 Parâmetros da Operação NDF")
 
-            # Slider for the effective market (floating) rate L for the period.
-            # Note: Here L is the effective rate for the entire period (e.g., a quarterly effective rate).
-            L_rate_percent = st.slider("Effective Market Rate (L) for the Period [%]", min_value=0.0, max_value=15.0, value=1.5, step=0.1, help = "Taxa efetiva de juros (DI) do período.")
-            L = L_rate_percent / 100.0
+            st.write("A cotação da moeda americana no mercado à vista na data da contratação é de 5,00 (BRL/USD)")
 
+            col1, col2 = st.columns(2)
 
-            # Compute the exposure’s cost
-            if exposure_type == "Floating Rate Exposure":
+            with col1:
+                st.subheader("📋 Dados da Operação")
+                
+                operacao = st.selectbox(
+                    "Tipo de Operação:",
+                    ["Compra", "Venda"],
+                    help="Compra: Você lucra se o dólar subir. Venda: Você lucra se o dólar descer."
+                )
+                
+                valor_nocional_milhoes = st.number_input(
+                    "Valor Nocional (US$ milhões):",
+                    min_value=1.0,
+                    max_value=100.0,
+                    value=10.0,
+                    step=1.0,
+                    format="%.0f",
+                    help="Valor da operação em milhões de dólares americanos"
+                )
+                
+                st.markdown('<div class="currency-label">Valor em USD para cálculo dos resultados</div>', unsafe_allow_html=True)
 
-                st.subheader("Calculated Results")
-                st.markdown("#### FWD (Forward) Payoff")
+            with col2:
+                st.subheader("💲 Cotações USD/BRL")
+                
+                cotacao_contratacao = st.number_input(
+                    "Cotação do NDF na data da contratação (BRL/USD):",
+                    min_value=1.0000,
+                    max_value=10.0000,
+                    value=5.2000,
+                    step=0.0100,
+                    format="%.2f",
+                    help="Taxa de câmbio BRL/USD acordada no momento da contratação"
+                )
+                
+                cotacao_vencimento = st.number_input(
+                    "Cotação do NDF no Vencimento (BRL/USD):",
+                    min_value=1.0000,
+                    max_value=10.0000,
+                    value=5.5000,
+                    step=0.0100,
+                    format="%.2f",
+                    help="Taxa de câmbio BRL/USD na data de vencimento (1 ano depois)"
+                )
+                
+                st.markdown('<div class="currency-label">Valores em Reais por Dólar</div>', unsafe_allow_html=True)
 
-                # Calculate the effective fixed rate for the period from the annualized FWD fixed rate, using compound interest.
-                effective_fixed_rate = (1 + F)**delta - 1
+            # Realizar cálculos
+            valor_nocional_usd = valor_nocional_milhoes * 1000000  # Converter para valor total em USD
+            resultado_operacao = calcular_resultado_ndf(operacao, cotacao_contratacao, cotacao_vencimento, valor_nocional_usd)
+            valor_inicial_brl = calcular_valor_inicial_brl(cotacao_contratacao, valor_nocional_usd)
+            valor_final_brl = calcular_valor_final_brl(cotacao_vencimento, valor_nocional_usd)
+            diferenca_cotacao = cotacao_vencimento - cotacao_contratacao
+            variacao_percentual = (diferenca_cotacao / cotacao_contratacao) * 100
 
-                # Compute the FWD payoff using the new formula
-                FWD_payoff = notional * (L - effective_fixed_rate)
-                st.write(f"**FWD Payoff:** ${FWD_payoff:,.2f}")
+            # Exibir resultados em cartões coloridos
+            st.markdown("## 📊 Resultados da Operação NDF")
 
-                # For a floating exposure, the cost is based on the effective rate L.
-                exposure_cost = - notional * L
-                st.write(f"**Floating Exposure Cost:** ${exposure_cost:,.2f}")
+            # Layout dos resultados em colunas
+            res_col1, res_col2, res_col3, res_col4 = st.columns(4)
 
-                # The net combined outcome (hedged portfolio)
-                net_outcome = exposure_cost + FWD_payoff
-                st.markdown("#### Net Hedged Outcome")
-                st.write(f"**Net Outcome:** ${net_outcome:,.2f}")
+            with res_col1:
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">Valor Nocional</div>
+                    <div class="metric-value">{formatar_moeda_usd(valor_nocional_usd)}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
+            with res_col2:
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">Variação do USD</div>
+                    <div class="metric-value">{variacao_percentual:+.2f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-            elif exposure_type == "Fixed Rate Exposure":
+            with res_col3:
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">Diferença de Cotação</div>
+                    <div class="metric-value">{formatar_cotacao(diferenca_cotacao)}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                st.subheader("Calculated Results")
-                st.markdown("#### FWD (Forward) Payoff")
+            with res_col4:
+                profit_class = "profit-positive" if resultado_operacao >= 0 else "profit-negative"
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">Resultado da Operação</div>
+                    <div class="metric-value {profit_class}">{formatar_moeda_brl(resultado_operacao)}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                # Calculate the effective fixed rate for the period from the annualized FWD fixed rate, using compound interest.
-                effective_fixed_rate = (1 + F)**delta - 1
+            # Gráfico da evolução das cotações
+            st.markdown("## 📈 Evolução da Cotação USD/BRL")
 
-                # Compute the FWD payoff using the new formula
-                FWD_payoff = notional * (effective_fixed_rate - L)
-                st.write(f"**FWD Payoff:** ${FWD_payoff:,.2f}")
-
-                # For a fixed exposure, adjust the annualized fixed rate using compound interest.
-                effective_fixed_exposure_rate = (1 + fixed_exposure_rate)**delta - 1
-                exposure_cost = - notional * effective_fixed_exposure_rate
-                st.write(f"**Fixed Exposure Cost:** ${exposure_cost:,.2f}")
-
-                # The net combined outcome (hedged portfolio)
-                net_outcome = exposure_cost + FWD_payoff
-                st.markdown("#### Net Hedged Outcome")
-                st.write(f"**Net Outcome:** ${net_outcome:,.2f}")
-
-
-        
-            # Prepare a range of effective market rates for plotting
-            L_values = np.linspace(0.0, 0.15, 300)  # from 0% to 15% effective rate for the period
-
-            if exposure_type == "Floating Rate Exposure":
-                exposure_costs = - notional * L_values
-                FWD_payoffs = notional * (L_values - ((1 + F)**delta - 1))        
-            elif exposure_type == "Fixed Rate Exposure":
-                exposure_costs = - notional * ((1 + fixed_exposure_rate)**delta - 1) * np.ones_like(L_values)
-                FWD_payoffs = notional * (((1 + F)**delta - 1) - L_values)        
-
-            net_outcomes = exposure_costs + FWD_payoffs
-
-            # Create Plotly figure
-            import plotly.graph_objects as go
-
+            # Criar gráfico mostrando a evolução da cotação
             fig = go.Figure()
 
-            # Add traces with hover templates
-            fig.add_trace(go.Scatter(
-                x=L_values * 100,
-                y=FWD_payoffs,
-                mode='lines',
-                name='FWD Payoff',
-                line=dict(color='#ff7f0e'),  # C1 color equivalent
-                hovertemplate='FWD Payoff: $%{y:,.2f}<extra></extra>'
-            ))
+            # Cotação à vista do dólar (apenas ilustrativa)
+            cotacao_vista = 5.00
+
+            # Linha mostrando a evolução da cotação NDF
+            periodos = ['Contratação (D0)', 'Vencimento (1 ano)']
+            cotacoes = [cotacao_contratacao, cotacao_vencimento]
+            cores_linha = ['#3498db', '#27ae60' if cotacao_vencimento > cotacao_contratacao else '#e74c3c']
 
             fig.add_trace(go.Scatter(
-                x=L_values * 100,
-                y=exposure_costs,
-                mode='lines',
-                name='Exposure Cost',
-                line=dict(color='#2ca02c'),  # C2 color equivalent
-                hovertemplate='Exposure Cost: $%{y:,.2f}<extra></extra>'
+                x=periodos,
+                y=cotacoes,
+                mode='lines+markers',
+                name='Cotação NDF (Contrato)',
+                line=dict(color='#3498db', width=4),
+                marker=dict(
+                    color=cores_linha,
+                    size=15,
+                    line=dict(color='white', width=3)
+                ),
+                hovertemplate='<b>%{x}</b><br>Cotação NDF: R$ %{y:.2f}<extra></extra>'
             ))
 
+            # Linha horizontal mostrando a cotação à vista (apenas ilustrativa)
             fig.add_trace(go.Scatter(
-                x=L_values * 100,
-                y=net_outcomes,
-                mode='lines',
-                name='Net Outcome',
-                line=dict(color='#1f77b4', dash='dash'),  # C0 color with dash
-                hovertemplate='Net Outcome: $%{y:,.2f}<extra></extra>'
+                x=periodos,
+                y=[cotacao_vista, cotacao_vista],
+                mode='lines+markers',
+                name='Cotação à Vista (Referência)',
+                line=dict(color='#95a5a6', width=2, dash='dash'),
+                marker=dict(
+                    color='#95a5a6',
+                    size=10,
+                    symbol='square',
+                    line=dict(color='white', width=2)
+                ),
+                hovertemplate='<b>%{x}</b><br>Cotação à Vista: R$ %{y:.2f}<br><i>(Apenas referência)</i><extra></extra>'
             ))
 
-            # Add vertical line for current rate
-            fig.add_vline(
-                x=L_rate_percent, 
-                line=dict(color="gray", dash="dash")
-            )
-
-            # Add annotation for the vertical line - moved to top of the chart
-            fig.add_annotation(
-                x=L_rate_percent,
-                y=max(max(FWD_payoffs), max(net_outcomes)) * 0.95,  # Position at 95% of the maximum y value
-                text=f"Current L = {L_rate_percent:.1f}%",
-                showarrow=False,
-                yanchor="bottom",
-                xanchor="center",
-                bgcolor="rgba(255, 255, 255, 0.8)",  # Semi-transparent white background
-                bordercolor="black",
-                borderwidth=1
-            )
-
-            # Update layout
-            fig.update_layout(
-                xaxis_title="Effective Market Rate (L) for the Period (%)",
-                yaxis_title="Amount ($)",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                hovermode="x unified",
-                xaxis=dict(showgrid=True),
-                yaxis=dict(showgrid=True)
-            )
-
-            # Display the figure in Streamlit
-            st.plotly_chart(fig, use_container_width=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            st.markdown("---")
-            st.markdown(r"""
-            ### How to Interpret the Simulation
-
-            - **FWD Payoff:**  
-            The FWD payoff is computed as:
-            """)
-
-            st.latex(r'\text{FWD Payoff} = N\left( L - \Big[(1+F)^\Delta - 1\Big] \right)')
-
-            ("""
-            Here, \(L\) is the effective market rate for the period and 
-            """)
-            
-            st.latex(r'(1+F)^\Delta - 1')
-
-            ("""
-            
-            is the effective fixed rate using compound interest.
-            A higher \(L\) compared to the compounded fixed rate yields a positive payoff.
-
-            - **Exposure Cost:**  
-            - For a floating–rate exposure, the cost is 
-            """)
-            
-            st.latex(r'N \cdot L \quad (\text{since } L \text{ is the effective rate for the period})')
-            
-            ("""
-            (since \(L\) is the effective rate for the period).  
-            - For a fixed–rate exposure, the cost is computed as:
-            """)
-
-            st.latex(r'N\left((1+\text{Fixed Rate})^\Delta - 1\right)')
-
-            ("""
-
-            - **Net Outcome:**  
-            The net outcome represents the overall effect of the hedge, calculated as the difference between the exposure cost and the FWD payoff.
-
-            Use the sidebar controls to explore how varying the effective market rate \(L\) and adjusting other parameters affects the FWD payoff and the overall hedged outcome.
-            """)
-
-
-            st.markdown("---")
-            st.markdown(r"""
-            ### Hedging Results for the Selected Values
-            """)
-
-            # Create an interactive bar chart that shows only the chosen results.
-            categories = ["FWD Payoff", "Exposure Cost", "Net Outcome"]
-            values = [FWD_payoff, exposure_cost, net_outcome]
-
-            fig = go.Figure(data=[
-                go.Bar(
-                    x=categories,
-                    y=values,
-                    text=[f"${val:,.2f}" for val in values],
-                    textposition='auto',
-                    marker_color=['royalblue', 'firebrick', 'green']
-                )
-            ])
+            # Adicionar área sombreada para mostrar a variação
+            fig.add_trace(go.Scatter(
+                x=periodos + periodos[::-1],
+                y=[min(cotacoes), min(cotacoes)] + [max(cotacoes), max(cotacoes)],
+                fill='tonexty',
+                fillcolor='rgba(52, 152, 219, 0.1)' if resultado_operacao >= 0 else 'rgba(231, 76, 60, 0.1)',
+                line=dict(color='rgba(255,255,255,0)'),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
 
             fig.update_layout(
-                title="",
-                xaxis_title="Metric",
-                yaxis_title="Amount ($)",
-                hovermode="closest"
+                title={
+                    'text': f'Contrato NDF vs Cotação à Vista - {operacao} de US$ {valor_nocional_milhoes:.0f} milhões',
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'font': {'size': 18}
+                },
+                xaxis_title="Período",
+                yaxis_title="Cotação (R$/US$)",
+                height=400,
+                showlegend=True,
+                hovermode='x unified',
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+            )
+
+            fig.update_xaxes(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(128,128,128,0.2)'
+            )
+
+            fig.update_yaxes(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(128,128,128,0.2)',
+                tickformat=',.2f'
             )
 
             st.plotly_chart(fig, use_container_width=True)
+
+            # Análise detalhada do resultado
+            st.markdown("## 🎯 Análise Detalhada")
+
+            col_analise1, col_analise2 = st.columns(2)
+
+            with col_analise1:
+                st.markdown("### 📊 Resumo Financeiro")
+                
+                if resultado_operacao > 0:
+                    st.success(f"✅ **Operação Lucrativa**: A {operacao.lower()} do NDF resultou em um **ganho** de {formatar_moeda_brl(resultado_operacao)}.")
+                elif resultado_operacao < 0:
+                    st.error(f"❌ **Operação com Prejuízo**: A {operacao.lower()} do NDF resultou em uma **perda** de {formatar_moeda_brl(abs(resultado_operacao))}.")
+                else:
+                    st.info("⚖️ **Operação Neutra**: A operação não resultou em ganho nem perda.")
+                
+                st.markdown(f"""
+                **Detalhes da Operação:**
+                - **Valor Nocional**: {formatar_moeda_usd(valor_nocional_usd)}
+                - **Cotação no Mercado à Vista**: R$5.00
+                - **Cotação na Data da Contratação**: {formatar_cotacao(cotacao_contratacao)}
+                - **Cotação no Vencimento**: {formatar_cotacao(cotacao_vencimento)}
+                - **Variação**: {diferenca_cotacao:+.2f} ({variacao_percentual:+.2f}%)
+                """)
+
+            with col_analise2:
+                st.markdown("### 🧮 Como foi Calculado")
+                
+                if operacao == "Compra":
+                    st.markdown(f"""
+                    **Fórmula para Compra de NDF:**
+                    
+                    `Resultado = (Cotação Vencimento - Cotação Contratação) × N`
+                    
+                    **Aplicando os valores:**
+                    - Cotação no Vencimento: {formatar_cotacao(cotacao_vencimento)}
+                    - Cotação na Data da Contratação: {formatar_cotacao(cotacao_contratacao)}
+                    - Valor Nocional (N): {formatar_moeda_usd(valor_nocional_usd)}
+                    
+                    **Cálculo:**
+                    `({cotacao_vencimento:.2f} - {cotacao_contratacao:.2f}) × {valor_nocional_usd:,.0f}`
+                    `= {diferenca_cotacao:+.2f} × {valor_nocional_usd:,.0f}`
+                    `= {formatar_moeda_brl(resultado_operacao)}`
+                    """)
+                else:
+                    st.markdown(f"""
+                    **Fórmula para Venda de NDF:**
+                    
+                    `Resultado = (Cotação Contratação - Cotação Vencimento) × N`
+                    
+                    **Aplicando os valores:**
+                    - Cotação Contratação: {formatar_cotacao(cotacao_contratacao)}
+                    - Cotação Vencimento: {formatar_cotacao(cotacao_vencimento)}
+                    - Valor Nocional (N): {formatar_moeda_usd(valor_nocional_usd)}
+                    
+                    **Cálculo:**
+                    `({cotacao_contratacao:.2f} - {cotacao_vencimento:.2f}) × {valor_nocional_usd:,.0f}`
+                    `= {-diferenca_cotacao:+.2f} × {valor_nocional_usd:,.0f}`
+                    `= {formatar_moeda_brl(resultado_operacao)}`
+                    """)
+
+            # Seção educacional com fórmulas
+            st.markdown("## 📚 Fórmulas e Conceitos")
+
+            col_form1, col_form2 = st.columns(2)
+
+            with col_form1:
+                st.markdown("""
+                **Fórmulas do NDF:**
+                <div class="formula-box">
+                <strong>Compra de NDF:</strong><br>
+                Resultado = (Cotação Vencimento - Cotação Contratação) × N
+                </div>
+                
+                <div class="formula-box">
+                <strong>Venda de NDF:</strong><br>
+                Resultado = (Cotação Contratação - Cotação Vencimento) × N
+                </div>
+                """, unsafe_allow_html=True)
+
+            with col_form2:
+                st.markdown("""
+                **Interpretação dos Resultados:**
+                <div class="formula-box">
+                <strong>Compra:</strong> Lucra se USD subir<br>
+                <strong>Venda:</strong> Lucra se USD descer<br>
+                <strong>N:</strong> Valor Nocional em USD<br>
+                <strong>Liquidação:</strong> Sempre em BRL
+                </div>
+                """, unsafe_allow_html=True)
+
+            # Explicação adicional
+            with st.expander("📖 Entenda o NDF em Detalhes"):
+                st.markdown("""
+                **Características do NDF:**
+                - **Sem entrega física**: Apenas liquidação financeira da diferença
+                - **Proteção cambial**: Usado para hedge de exposição ao dólar
+                - **Derivativo de balcão**: Negociado diretamente entre as partes
+                - **Duração fixa**: 1 ano no nosso exemplo
+                
+                **Estratégias:**
+                - **Compra**: Proteção contra alta do dólar (importadores)
+                - **Venda**: Proteção contra queda do dólar (exportadores)
+                - **Especulação**: Apostas direcionais na cotação do USD/BRL
+                
+                **Riscos:**
+                - **Risco de mercado**: Variações adversas da cotação
+                - **Risco de contraparte**: Possibilidade de inadimplência
+                - **Risco de liquidez**: Dificuldade para desfazer a posição
+                """)
 
             ##########################################################################################################
             ##########################################################################################################
             
         # Instructions based on selection
-        if st.session_state.selected_option == "Futures":
+        if st.session_state.selected_option == "Futuros":
             
-            def calculate_theoretical_price(spot_price, rate, days=5):
-                T = days/252
-                return round(spot_price * (1+rate)**T, 2)
+            # CSS customizado para melhorar o visual
+            st.markdown("""
+            <style>
+                .main > div {
+                    padding-top: 2rem;
+                }
+                
+                .stSelectbox > div > div {
+                    background-color: #f8f9fa;
+                }
+                
+                .stNumberInput > div > div {
+                    background-color: #f8f9fa;
+                }
+                
+                .metric-container {
+                    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+                    padding: 0.5rem;
+                    border-radius: 10px;
+                    color: white;
+                    margin: 0.8rem 0;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+                
+                .metric-value {
+                    font-size: 1.3rem;
+                    font-weight: bold;
+                    margin: 0.3rem 0;
+                }
+                
+                .metric-label {
+                    font-size: 0.95rem;
+                    opacity: 1;
+                }
+                
+                .profit-positive {
+                    color: green;
+                }
+                
+                .profit-negative {
+                    color: gold;
+                }
+                
+                .info-box {
+                    background: #e8f6ff;
+                    padding: 1.5rem;
+                    border-radius: 10px;
+                    border-left: 4px solid #3498db;
+                    margin: 1rem 0;
+                }
+                
+                .formula-box {
+                    background: #f8f9fa;
+                    padding: 0.3rem;
+                    border-radius: 8px;
+                    border-left: 1px solid #17a2b8;
+                    font-family: 'Courier New', monospace;
+                    margin: 0.2rem 0;
+                }
+                
+                .header-container {
+                    text-align: center;
+                    padding: 1rem 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    margin: -2rem -3rem 2rem -3rem;
+                    border-radius: 0 0 20px 20px;
+                    color: white;
+                }
+                
+                .header-title {
+                    font-size: 3rem;
+                    font-weight: 300;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .header-subtitle {
+                    font-size: 1.2rem;
+                    opacity: 0.9;
+                }
+            </style>
+            """, unsafe_allow_html=True)
 
-            def simulate_daily_prices(initial_price, final_price, days=5):
-                """Generate random daily prices between initial and final price"""
-                np.random.seed(42)  # For reproducibility
-                prices = [initial_price]
-                
-                for _ in range(days-1):
-                    # Random price between current price and final price
-                    min_price = min(initial_price, final_price)
-                    max_price = max(initial_price, final_price)
-                    daily_price = np.random.uniform(min_price, max_price)
-                    prices.append(daily_price)
-                
-                prices.append(final_price)  # Ensure final price matches settlement price
-                return np.array(prices)
+            # Funções auxiliares
+            def formatar_moeda(valor):
+                """Formata valor como moeda brasileira"""
+                return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-            def calculate_margin_account(prices, notional_value, is_asset):
-                initial_margin = notional_value * 0.1
-                maintenance_margin = initial_margin * 0.5
-                num_contracts = notional_value / (prices[0] * 1000)
-                
-                balance = initial_margin
-                margin_history = [(0, balance, initial_margin, maintenance_margin)]
-                total_margin_calls = 0
-                
-                for i in range(1, len(prices)):
-                    price_change = prices[i] - prices[i-1]
-                    daily_pnl = price_change * 1000 * num_contracts * (1 if is_asset else -1)
-                    balance += daily_pnl
-                    
-                    if balance < maintenance_margin:
-                        balance = initial_margin  # Reset to initial margin after call
-                        
-                    margin_history.append((i, balance, initial_margin, maintenance_margin))
-                
-                # Calculate final balance considering total P&L
-                final_total_pnl = (prices[-1] - prices[0]) * 1000 * num_contracts * (1 if is_asset else -1)
-                final_balance = max(0, initial_margin + final_total_pnl)  # Ensure minimum balance of 0
-                margin_history[-1] = (len(prices)-1, final_balance, initial_margin, maintenance_margin)
-                
-                return pd.DataFrame(margin_history, columns=['Day', 'Balance', 'Initial Margin', 'Maintenance Margin'])
+            def formatar_numero(valor):
+                """Formata número com separador de milhares"""
+                return f"{valor:,.0f}".replace(",", ".")
 
-            def main():
-                st.title("Futures Contract Simulator")
-                st.write("### Oil Futures Contract (1,000 barrels)")
-                
-                st.markdown(r"""
-                This simulator shows how a oil future contract (FWD) develops assuming that:
+            def calcular_pu_contratacao(taxa_contratacao, prazo_vencimento):
+                """Calcula o PU na contratação"""
+                return 100000 / ((1 + taxa_contratacao) ** (prazo_vencimento / 252))
 
-                - The future contract is 1,000 oil barrels
-                - The oil contract expires in 5 days 
-                - the contract will be kept for 5 trading days until settlement by difference
-                - The initial margin is 10% of the notional value
-                - The maintenance margin is 50% of the initial margin. Once reached, it must return to the initial margin.
+            def calcular_numero_contratos(valor_nocional, pu_contratacao):
+                """Calcula número de contratos (arredondado para baixo)"""
+                return math.floor(valor_nocional / pu_contratacao)
+
+            def calcular_pu_vencimento(pu_contratacao, taxa_efetiva):
+                """Calcula PU no vencimento"""
+                return pu_contratacao * (1 + taxa_efetiva)
+
+            def calcular_resultado(operacao, pu_contratacao, pu_vencimento, numero_contratos):
+                """Calcula resultado da operação"""
+                if operacao == "Compra":
+                    return (pu_vencimento - pu_contratacao) * numero_contratos
+                else:
+                    return (pu_contratacao - pu_vencimento) * numero_contratos
+
+            def calcular_taxa_efetiva_anual(taxa_efetiva):
+                """Taxa Efetiva Anual no Período"""
+                return ((1 + taxa_efetiva/100)**(252/prazo_vencimento)-1)*100
+
+            # Cabeçalho da aplicação
+            st.markdown("""
+            <div class="header-container">
+                <h1 class="header-title">📈 Simulador de Contratos DI Futuro</h1>
+                <p class="header-subtitle">Ferramenta educacional para entender o comportamento de contratos DI futuro</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Caixa de informações
+            st.markdown("""
+            <div class="info-box">
+                <h3>ℹ️ Como funciona:</h3>
+                <p>O contrato DI futuro é um derivativo que representa a expectativa sobre a taxa CDI futura. 
+                Ajuste os parâmetros abaixo e veja como eles afetam o resultado da operação.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.header("🎯 Parâmetros da Operação")
+
+            # Layout de inputs em colunas
+            col1, col2 = st.columns(2)
+
+            with col1:
+                #st.subheader("🎯 Parâmetros da Operação")
+                
+                operacao = st.selectbox(
+                    "Tipo de Operação:",
+                    ["Compra", "Venda"],
+                    help="Escolha se você está comprando ou vendendo contratos DI futuro"
+                )
+                
+                valor_nocional_milhoes = st.number_input(
+                    "Valor Nocional (R$ milhões):",
+                    min_value=10.0,
+                    max_value=100.0,
+                    value=50.0,
+                    step=1.0,
+                    help="Valor total da operação em milhões de reais"
+                )
+
+                prazo_vencimento = st.number_input(
+                    "Prazo para Vencimento (dias úteis):",
+                    min_value=1,
+                    max_value=252,
+                    value=10,
+                    step=1,
+                    help="Número de dias úteis até o vencimento (ano = 252 dias úteis)"
+                )
+
+            with col2:
+                #st.subheader("📊 Taxas de Juros")
+                
+                taxa_contratacao = st.number_input(
+                    "Taxa de Juros na Contratação (% a.a.):",
+                    min_value=0.0,
+                    max_value=50.0,
+                    value=12.0,
+                    step=0.01,
+                    format="%.2f",
+                    help="Taxa de juros anual no momento da contratação"
+                )
+                
+                taxa_efetiva = st.number_input(
+                    "Taxa Efetiva no Período (%):",
+                    min_value=-10.0,
+                    max_value=10.0,
+                    value=0.15,
+                    step=0.01,
+                    format="%.2f",
+                    help="Taxa efetiva realizada no período"
+                )
+
+                taxa_efetiva_anual_periodo = calcular_taxa_efetiva_anual(taxa_efetiva)
+                taxa_efetiva_anual = st.number_input(
+                    "Taxa Efetiva Anual no Período (%):",
+                    value=taxa_efetiva_anual_periodo,
+                    format="%.2f",
+                    help="Taxa efetiva anual realizada no período"
+                )
+
+            #    taxa_efetiva_anual_periodo 
+                
+
+
+            # Realizar cálculos
+            valor_nocional = valor_nocional_milhoes * 1000000
+            taxa_contratacao_decimal = taxa_contratacao / 100
+            taxa_efetiva_decimal = taxa_efetiva / 100
+
+            pu_contratacao = calcular_pu_contratacao(taxa_contratacao_decimal, prazo_vencimento)
+            numero_contratos = calcular_numero_contratos(valor_nocional, pu_contratacao)
+            pu_vencimento = calcular_pu_vencimento(pu_contratacao, taxa_efetiva_decimal)
+            resultado_operacao = calcular_resultado(operacao, pu_contratacao, pu_vencimento, numero_contratos)
+
+            # Exibir resultados em cartões coloridos
+            st.markdown("## 📊 Resultados da Operação")
+
+            # Layout dos resultados em colunas
+            res_col1, res_col2, res_col3, res_col4 = st.columns(4)
+
+            with res_col1:
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">PU na Contratação</div>
+                    <div class="metric-value">{formatar_moeda(pu_contratacao)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with res_col2:
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">Número de Contratos</div>
+                    <div class="metric-value">{formatar_numero(numero_contratos)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with res_col3:
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">PU no Vencimento</div>
+                    <div class="metric-value">{formatar_moeda(pu_vencimento)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with res_col4:
+                profit_class = "profit-positive" if resultado_operacao >= 0 else "profit-negative"
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div class="metric-label">Resultado da Operação</div>
+                    <div class="metric-value {profit_class}">{formatar_moeda(resultado_operacao)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # Gráfico da evolução do PU
+            st.markdown("## 📈 Evolução do Preço Unitário (PU)")
+
+            # Criar gráfico com Plotly - Duas linhas distintas
+            fig = go.Figure()
+
+            # Linha horizontal: D0 até o prazo (base do retângulo)
+            fig.add_trace(go.Scatter(
+                x=['D0', f'{prazo_vencimento} DU', 'Vcto'],
+                y=[pu_contratacao, pu_contratacao, pu_contratacao],
+                mode='lines',
+                line=dict(color="#000406", width=2),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+
+            # Linha vertical esquerda: PU contratação
+            fig.add_trace(go.Scatter(
+                x=['D0', 'Vcto'],
+                y=[pu_contratacao, 100000],
+                mode='lines+markers',
+                name=f'PU = {formatar_moeda(pu_contratacao)}',
+                line=dict(color='#3498db', width=2),
+                marker=dict(color='#3498db', size=8),
+                hovertemplate='<b>D0</b><br>PU: %{y:,.2f}<extra></extra>'
+            ))
+
+            # Linha vertical direita: PU vencimento
+            fig.add_trace(go.Scatter(
+                x=['D0', 'Vcto'],
+                y=[pu_contratacao, pu_vencimento],
+                mode='lines+markers',
+                name=f'PU = {formatar_moeda(pu_vencimento)}',
+                line=dict(color='#e74c3c' if pu_vencimento < 100000 else '#27ae60', width=3),
+                marker=dict(color='#e74c3c' if pu_vencimento < 100000 else '#27ae60', size=8),
+                hovertemplate='<b>%{x}</b><br>PU: %{y:,.2f}<extra></extra>'
+            ))
+
+            # Linha pontilhada mostrando valor teórico de 100.000
+            fig.add_trace(go.Scatter(
+                x=['D0', f'{prazo_vencimento} DU', 'Vcto'],
+                y=[100000, 100000, 100000],
+                mode='lines',
+                name='PU = R$ 100.000 (Teórico)',
+                line=dict(color='gray', width=1, dash='dot'),
+                hovertemplate='<b>Valor Teórico</b><br>PU: R$ 100.000,00<extra></extra>'
+            ))
+
+            fig.update_layout(
+                title={
+                    'text': f'Comportamento do PU - {operacao} de Contratos DI',
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'font': {'size': 16}
+                },
+                xaxis_title="Período",
+                yaxis_title="Preço Unitário (R$)",
+                height=400,
+                showlegend=True,
+                hovermode='closest',
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+            )
+
+            fig.update_xaxes(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(128,128,128,0.2)'
+            )
+
+            fig.update_yaxes(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(128,128,128,0.2)',
+                tickformat=',.2f'
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Análise do resultado
+            st.markdown("## 🎯 Análise do Resultado")
+
+            diferenca_pu = pu_vencimento - pu_contratacao
+            percentual_variacao = (diferenca_pu / pu_contratacao) * 100
+
+            col_analise1, col_analise2 = st.columns(2)
+
+            with col_analise1:
+                if resultado_operacao > 0:
+                    st.success(f"✅ **Operação Lucrativa**: A {operacao.lower()} de contratos DI futuro resultou em um ganho de **{formatar_moeda(resultado_operacao)}**.")
+                elif resultado_operacao < 0:
+                    st.error(f"❌ **Operação com Prejuízo**: A {operacao.lower()} de contratos DI futuro resultou em uma perda de **{formatar_moeda(abs(resultado_operacao))}**.")
+                else:
+                    st.info("⚖️ **Operação Neutra**: A operação não resultou em ganho nem perda.")
+
+            with col_analise2:
+                st.info(f"""
+                **Variação do PU:**
+                - Diferença: {formatar_moeda(diferenca_pu)}
+                - Percentual: {percentual_variacao:+.3f}%
+                - Contratos: {formatar_numero(numero_contratos)}
                 """)
+
+            # Explicação das linhas do gráfico
+            st.markdown("""
+            **Interpretação do Gráfico:**
+            - 🔵 **Linha Azul Pontilhada**: Mostra o desconto aplicado pela taxa de juros contratada (de R$ 100.000 para o PU na contratação)
+            - 🟢/🔴 **Linha Contínua**: Mostra a realização efetiva (do PU contratado ao PU no vencimento)
+            - A **diferença entre as linhas** representa o ganho/perda da operação
+            """)
+
+            # Seção educacional com fórmulas
+            st.markdown("## 📚 Fórmulas Matemáticas")
+
+            col_form1, col_form2 = st.columns(2)
+
+            with col_form1:
+                st.markdown("""
+                **Cálculo do PU na Contratação:**
+                <div class="formula-box">PU = 100.000 / (1 + R)^(t/252)</div>
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    notional_value = st.number_input("Notional Value ($)", min_value=1000, value=1000000)
-                    contract_type = st.selectbox("Contract Type", ["Hedge", "Speculation"])
-                    position_type = st.selectbox("Futures Position (Asset/Buy/Long or Liability/Sell/Short)", ["Asset", "Liability"])
+                **Número de Contratos:**
+                <div class="formula-box">N = floor(Valor Nocional / PU)</div>
+                """, unsafe_allow_html=True)
+
+            with col_form2:
+                st.markdown("""
+                **PU no Vencimento:**
+                <div class="formula-box">PU_vencimento = PU × (1 + R')</div>
                 
-                with col2:
-                    spot_price = st.number_input("Spot Price ($/barrel)", min_value=1.0, value=80.0)
-                    selic_rate = st.number_input("Selic Rate (%)", min_value=0.0, value=5.0) / 100
-                    settlement_price = st.number_input("Settlement Price ($/barrel)", min_value=1.0, value=85.0)
+                **Resultado da Operação:**
+                <div class="formula-box">
+                Compra: (PU_vencimento - PU) × N<br>
+                Venda: (PU - PU_vencimento) × N
+                </div>
+                """, unsafe_allow_html=True)
 
-                if st.button("Calculate Results"):
-                    theoretical_price = calculate_theoretical_price(spot_price, selic_rate)
-                    daily_prices = simulate_daily_prices(theoretical_price, settlement_price)
-                    
-                    is_asset = position_type == "Asset"
-                    margin_df = calculate_margin_account(daily_prices, notional_value, is_asset)
-                    
-                    num_contracts = int(notional_value / (theoretical_price * 1000))  # Truncate to integer
-                    futures_pnl = (settlement_price - theoretical_price) * 1000 * num_contracts * (1 if is_asset else -1)
-                    hedge_result = -futures_pnl if contract_type == "Hedge" else 0
-                    net_result = futures_pnl + hedge_result
-                    
-                    st.write("### Results")
-
-                    col1, col2, col3 = st.columns(3)
-                    with col2:          
-                        st.metric("Number of Contracts", f"{num_contracts:.0f} contracts")
-
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Theoretical Price", f"${theoretical_price:.2f}/barrel")
-                    with col2:
-                        st.metric("Futures P&L", f"${futures_pnl:.2f}")
-                    with col3:
-                        st.metric("Net Result", f"${net_result:.2f}")
-                    
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=margin_df['Day'], y=margin_df['Balance'],
-                                            mode='lines+markers', name='Balance'))
-                    fig.add_trace(go.Scatter(x=margin_df['Day'], y=margin_df['Initial Margin'],
-                                            mode='lines', name='Initial Margin', line=dict(dash='dash')))
-                    fig.add_trace(go.Scatter(x=margin_df['Day'], y=margin_df['Maintenance Margin'],
-                                            mode='lines', name='Maintenance Margin', line=dict(dash='dot')))
-                    
-                    fig.update_layout(title='Margin Account Evolution',
-                                    xaxis_title='Day',
-                                    yaxis_title='Balance ($)',
-                                    height=500)
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    st.write("### Understanding the Results")
-                    st.write(f"""
-                    - The theoretical futures price (${theoretical_price:.2f}) is calculated using the non-arbitrage principle
-                    - Daily mark-to-market settlements affect the margin account balance
-                    - Initial margin is ${notional_value * 0.1:.0f} (10% of notional value)
-                    - Maintenance margin is ${notional_value * 0.05:.0f} (50% of initial margin)
-                    - The {'asset' if is_asset else 'liability'} position in futures {'gained' if futures_pnl > 0 else 'lost'} ${abs(futures_pnl):.2f}
-                    """)
-                    
-                    if contract_type == "Hedge":
-                        st.write(f"- Future P&L: ${net_result:.2f}")
-
-            if __name__ == "__main__":
-                main()
+            # Explicação adicional
+            with st.expander("📖 Entenda os Conceitos"):
+                st.markdown("""
+                **Variáveis:**
+                - **R**: Taxa de juros de mercado na contratação (% a.a.)
+                - **t**: Prazo para vencimento em dias úteis
+                - **R'**: Taxa de juros efetiva no período (%)
+                - **PU**: Preço Unitário do contrato
+                - **N**: Número de contratos negociados
+                
+                **Como Interpretar:**
+                - **Compra**: Você lucra se a taxa efetiva for menor que a esperada (PU sobe)
+                - **Venda**: Você lucra se a taxa efetiva for maior que a esperada (PU desce)
+                - O resultado é proporcional ao número de contratos e à diferença entre PUs
+                """)
 
         # Instructions based on selection
         if st.session_state.selected_option == "Options":
@@ -1959,7 +2408,7 @@ elif st.session_state.step == "Derivativos":
                     
                     sigma = st.slider("Volatility (σ, %)", min_value=5.0, max_value=100.0, value=20.0, step=5.0, help="Annualized volatility of the underlying asset") / 100
                     
-                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=16.0, value=7.0, step=0.25, help="Annual risk-free interest rate") / 100
+                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=10.0, value=2.0, step=0.5, help="Annual risk-free interest rate") / 100
                     
                     # Calculate option premium
                     premium = black_scholes(S, K, T, r, sigma, option_type.lower())
@@ -2254,8 +2703,8 @@ elif st.session_state.step == "Derivativos":
                 
                 with col2:
                     T = st.slider("Time to Maturity (years)", min_value=0.1, max_value=2.0, value=1.0, step=0.1, key="strat_T")
-                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=16.0, value=7.0, step=0.25, key="strat_r") / 100
-
+                    r = st.slider("Risk-Free Interest Rate (r, %)", min_value=0.0, max_value=10.0, value=2.0, step=0.5, key="strat_r") / 100
+                
                 # Strategy-specific parameters and functions
                 if "Long Call" in selected_strategy:
                     K_call = st.slider("Call Strike Price", min_value=50.0, max_value=150.0, value=100.0, step=5.0, key="K_call")
