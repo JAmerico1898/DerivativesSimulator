@@ -1895,9 +1895,9 @@ elif st.session_state.step == "Derivativos":
             def calcular_resultado(operacao, pu_contratacao, pu_vencimento, numero_contratos):
                 """Calcula resultado da operação"""
                 if operacao == "Compra":
-                    return (pu_vencimento - pu_contratacao) * numero_contratos
+                    return (pu_vencimento - 100000) * numero_contratos
                 else:
-                    return (pu_contratacao - pu_vencimento) * numero_contratos
+                    return (100000 - pu_vencimento) * numero_contratos
 
             def calcular_taxa_efetiva_anual(taxa_efetiva):
                 """Taxa Efetiva Anual no Período"""
@@ -1969,7 +1969,7 @@ elif st.session_state.step == "Derivativos":
                     "Taxa Efetiva no Período (%):",
                     min_value=-10.0,
                     max_value=10.0,
-                    value=0.15,
+                    value=0.50,
                     step=0.01,
                     format="%.2f",
                     help="Taxa efetiva realizada no período"
@@ -2118,8 +2118,8 @@ elif st.session_state.step == "Derivativos":
             # Análise do resultado
             st.markdown("## 🎯 Análise do Resultado")
 
-            diferenca_pu = pu_vencimento - pu_contratacao
-            percentual_variacao = (diferenca_pu / pu_contratacao) * 100
+            diferenca_pu = pu_vencimento - 100000
+            percentual_variacao = (diferenca_pu / 100000) * 100
 
             col_analise1, col_analise2 = st.columns(2)
 
@@ -2164,12 +2164,12 @@ elif st.session_state.step == "Derivativos":
             with col_form2:
                 st.markdown("""
                 **PU no Vencimento:**
-                <div class="formula-box">PU_vencimento = PU × (1 + R')</div>
+                <div class="formula-box">PU_vcto = PU × (1 + R')</div>
                 
                 **Resultado da Operação:**
                 <div class="formula-box">
-                Compra: (PU_vencimento - PU) × N<br>
-                Venda: (PU - PU_vencimento) × N
+                Compra: (PU_vcto - 100000) × N<br>
+                Venda: (100000 - PU_vcto) × N
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -2186,7 +2186,7 @@ elif st.session_state.step == "Derivativos":
                 **Como Interpretar:**
                 - **Compra**: Você lucra se a taxa efetiva for menor que a esperada (PU sobe)
                 - **Venda**: Você lucra se a taxa efetiva for maior que a esperada (PU desce)
-                - O resultado é proporcional ao número de contratos e à diferença entre PUs
+                - O resultado é proporcional ao número de contratos e à diferença entre o PU no vencimento e R$100.000
                 """)
 
         # Instructions based on selection
