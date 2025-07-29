@@ -81,72 +81,6 @@ if st.session_state.step == "Introdução":
                 "explicacao": "Uma das principais funções dos derivativos é oferecer proteção (hedge) contra riscos de variações adversas nos preços dos ativos subjacentes."
             },
             {
-                "pergunta": "O que caracteriza um contrato a termo (forward)?",
-                "opcoes": [
-                    "É negociado exclusivamente em bolsas de valores",
-                    "Possui liquidez elevada e ajuste diário",
-                    "É um acordo personalizado entre duas partes para comprar/vender um ativo em data futura",
-                    "Sempre exige entrega física do ativo subjacente"
-                ],
-                "resposta": 2,
-                "explicacao": "Um contrato a termo é um acordo personalizado entre duas partes para comprar ou vender um ativo em uma data futura específica por um preço predeterminado."
-            },
-            {
-                "pergunta": "Qual a principal diferença entre contratos futuros e contratos a termo?",
-                "opcoes": [
-                    "Futuros não possuem data de vencimento específica",
-                    "Futuros são negociados em bolsa e padronizados, enquanto a termo são personalizados e OTC",
-                    "Contratos a termo oferecem maior liquidez que futuros",
-                    "Contratos futuros não exigem depósito de margem"
-                ],
-                "resposta": 1,
-                "explicacao": "A principal diferença é que contratos futuros são padronizados e negociados em bolsa, enquanto contratos a termo são personalizados e negociados no mercado de balcão (OTC)."
-            },
-            {
-                "pergunta": "Quais são as principais características dos swaps?",
-                "opcoes": [
-                    "São sempre negociados em bolsa e exigem padronização",
-                    "São contratos de curto prazo com vencimento máximo de 30 dias",
-                    "São acordos para troca de fluxos de caixa entre duas partes por um período específico",
-                    "Exigem sempre a entrega física do ativo subjacente"
-                ],
-                "resposta": 2,
-                "explicacao": "Swaps são acordos entre duas partes para trocar fluxos de caixa ou obrigações de pagamento durante um período específico, conforme condições predeterminadas. São tipicamente negociados no mercado de balcão (OTC)."
-            },
-            {
-                "pergunta": "Quais são os principais tipos de swaps no mercado financeiro?",
-                "opcoes": [
-                    "Swaps de commodities e swaps de ações",
-                    "Swaps de taxa de juros e swaps de moeda",
-                    "Swaps de curto prazo e swaps de longo prazo",
-                    "Swaps simples e swaps compostos"
-                ],
-                "resposta": 1,
-                "explicacao": "Os principais tipos de swaps são os swaps de taxa de juros (troca de fluxos baseados em taxas de juros diferentes) e swaps de moeda (troca de principal e pagamentos de juros em moedas diferentes)."
-            },
-            {
-                "pergunta": "Qual a principal diferença entre contratos futuros e contratos a termo em termos de liquidação?",
-                "opcoes": [
-                    "Futuros têm ajustes diários, enquanto contratos a termo são liquidados apenas no vencimento",
-                    "Contratos a termo são sempre liquidados diariamente",
-                    "Futuros não possuem liquidação financeira, apenas física",
-                    "Contratos a termo só podem ser liquidados por entrega física"
-                ],
-                "resposta": 0,
-                "explicacao": "Contratos futuros possuem ajustes diários (marking-to-market) onde ganhos e perdas são liquidados diariamente, enquanto contratos a termo são tipicamente liquidados apenas no vencimento."
-            },
-            {
-                "pergunta": "O que significa o termo 'swap' no contexto de derivativos?",
-                "opcoes": [
-                    "A compra de uma opção de compra e venda simultaneamente",
-                    "A troca de fluxos de caixa ou obrigações de pagamento entre duas partes",
-                    "A conversão de um contrato futuro em um contrato a termo",
-                    "O cancelamento de um derivativo antes de seu vencimento"
-                ],
-                "resposta": 1,
-                "explicacao": "Um swap é um acordo entre duas partes para trocar fluxos de caixa ou obrigações de pagamento de acordo com uma fórmula predeterminada durante um período específico."
-            },
-            {
                 "pergunta": "Qual é o propósito do hedge com derivativos?",
                 "opcoes": [
                     "Aumentar a exposição ao risco para obter maiores retornos",
@@ -178,39 +112,6 @@ if st.session_state.step == "Introdução":
                 ],
                 "resposta": 3,
                 "explicacao": "Uma das principais vantagens dos derivativos OTC é a flexibilidade para personalizar os contratos de acordo com as necessidades específicas das partes envolvidas."
-            },
-            {
-                "pergunta": "O que é a 'margem inicial' em contratos futuros?",
-                "opcoes": [
-                    "O lucro máximo possível do contrato",
-                    "O depósito exigido pela bolsa para garantir o cumprimento do contrato",
-                    "A diferença entre o preço à vista e o preço futuro",
-                    "O valor do prêmio pago pelo comprador do contrato"
-                ],
-                "resposta": 1,
-                "explicacao": "A margem inicial é um depósito de garantia exigido pela bolsa para assegurar que os participantes possam cumprir suas obrigações contratuais, funcionando como um mecanismo de gerenciamento de risco."
-            },
-            {
-                "pergunta": "O que significa o termo 'ajuste diário' em contratos futuros?",
-                "opcoes": [
-                    "A revisão diária das cláusulas do contrato",
-                    "A liquidação diária de ganhos e perdas baseada na variação do preço do contrato",
-                    "A mudança diária no preço de exercício",
-                    "O pagamento diário de dividendos pelo ativo subjacente"
-                ],
-                "resposta": 1,
-                "explicacao": "O ajuste diário (ou marking-to-market) é o processo de liquidação diária de ganhos e perdas baseada na variação do preço de fechamento do contrato futuro em relação ao dia anterior."
-            },
-            {
-                "pergunta": "Qual é a importância da padronização nos contratos futuros?",
-                "opcoes": [
-                    "Dificulta a negociação ao criar muitas variações de contratos",
-                    "Aumenta o risco de contraparte no mercado",
-                    "Facilita a liquidez e a formação de preços no mercado",
-                    "Aumenta os custos de transação para todos os participantes"
-                ],
-                "resposta": 2,
-                "explicacao": "A padronização dos contratos futuros facilita a liquidez do mercado e a formação de preços, pois cria um produto uniforme que pode ser facilmente negociado entre múltiplos participantes do mercado."
             },
             {
                 "pergunta": "Qual é o papel da câmara de compensação nos derivativos negociados em bolsa?",
@@ -278,17 +179,6 @@ if st.session_state.step == "Introdução":
                 "resposta": 1,
                 "explicacao": "Produtores agrícolas podem utilizar contratos futuros para fazer hedge contra quedas nos preços de seus produtos, garantindo um preço de venda predeterminado e reduzindo a incerteza em relação à receita futura."
             },
-            {
-                "pergunta": "O que é a base no contexto de contratos futuros?",
-                "opcoes": [
-                    "O valor mínimo que um contrato futuro pode atingir",
-                    "A diferença entre o preço à vista e o preço futuro",
-                    "O custo de transação para negociar um contrato futuro",
-                    "O valor da margem inicial exigida pela bolsa"
-                ],
-                "resposta": 1,
-                "explicacao": "A base é a diferença entre o preço à vista (spot) do ativo subjacente e o preço do contrato futuro. A base tende a convergir para zero à medida que o contrato se aproxima do vencimento."
-            }
         ]
         # Agora vamos adicionar mais questões para chegar a 50
         questoes_adicionais = [
@@ -381,39 +271,6 @@ if st.session_state.step == "Introdução":
                 "explicacao": "Os preços dos contratos futuros são afetados por vários fatores, incluindo o preço à vista do ativo subjacente, taxas de juros, tempo até o vencimento, custos de carregamento (armazenamento, seguro) e expectativas de mercado."
             },
             {
-                "pergunta": "Qual é o propósito das 'chamadas de margem' em contratos futuros?",
-                "opcoes": [
-                    "Aumentar a lucratividade das bolsas de valores",
-                    "Permitir especulação sem limites",
-                    "Garantir que haja recursos suficientes para cobrir potenciais perdas",
-                    "Reduzir a liquidez no mercado futuro"
-                ],
-                "resposta": 2,
-                "explicacao": "Chamadas de margem servem para garantir que os participantes mantenham depósitos suficientes para cobrir potenciais perdas, reduzindo o risco de inadimplência e protegendo a integridade do mercado."
-            },
-            {
-                "pergunta": "Como os contratos de swap de taxa de juros funcionam?",
-                "opcoes": [
-                    "Ambas as partes pagam taxas fixas entre si",
-                    "Uma parte paga taxa fixa e recebe taxa variável, enquanto a outra faz o oposto",
-                    "Ambas as partes pagam taxas variáveis, mas em moedas diferentes",
-                    "Uma parte paga taxa variável, enquanto a outra não faz nenhum pagamento"
-                ],
-                "resposta": 1,
-                "explicacao": "Em um swap de taxa de juros típico, uma parte paga uma taxa de juros fixa e recebe uma taxa variável, enquanto a outra parte faz o oposto, pagando a taxa variável e recebendo a taxa fixa."
-            },
-            {
-                "pergunta": "O que diferencia um mercado forward de um mercado futuro?",
-                "opcoes": [
-                    "Mercados forwards são sempre mais líquidos",
-                    "Mercados futuros são sempre OTC, enquanto forwards são negociados em bolsa",
-                    "Mercados forwards são negociados OTC e personalizados, enquanto futuros são negociados em bolsa e padronizados",
-                    "Mercados forwards não permitem especulação, apenas hedge"
-                ],
-                "resposta": 2,
-                "explicacao": "Mercados forwards são negociados no mercado de balcão (OTC) com contratos personalizados, enquanto mercados futuros envolvem contratos padronizados negociados em bolsas organizadas."
-            },
-            {
                 "pergunta": "Quais são os riscos associados aos derivativos?",
                 "opcoes": [
                     "Apenas risco de preço do ativo subjacente",
@@ -423,28 +280,6 @@ if st.session_state.step == "Introdução":
                 ],
                 "resposta": 1,
                 "explicacao": "Os derivativos envolvem múltiplos riscos, incluindo risco de mercado (mudanças no valor do ativo subjacente), risco de contraparte (inadimplência da outra parte), risco de liquidez (dificuldade de sair da posição) e risco operacional (falhas nos processos)."
-            },
-            {
-                "pergunta": "Quais são as vantagens dos contratos padronizados de futuros?",
-                "opcoes": [
-                    "Maior facilidade de personalização para necessidades específicas",
-                    "Menor risco de contraparte e maior liquidez",
-                    "Ausência de regulamentação governamental",
-                    "Ausência de necessidade de depósito de margem"
-                ],
-                "resposta": 1,
-                "explicacao": "As vantagens dos contratos padronizados de futuros incluem menor risco de contraparte (devido à câmara de compensação), maior liquidez (devido à padronização), maior transparência de preços e facilidade de negociação."
-            },
-            {
-                "pergunta": "O que é um 'swap de moeda'?",
-                "opcoes": [
-                    "Um contrato para trocar moedas físicas imediatamente",
-                    "Um contrato onde uma parte paga juros em uma moeda e recebe juros em outra moeda",
-                    "Um contrato futuro sobre taxas de câmbio",
-                    "A prática de especular com múltiplas moedas simultaneamente"
-                ],
-                "resposta": 1,
-                "explicacao": "Um swap de moeda é um contrato no qual as partes trocam pagamentos de principal e juros em diferentes moedas, permitindo gerenciar o risco cambial e de taxa de juros simultaneamente."
             },
             {
                 "pergunta": "Por que empresas utilizam derivativos de commodities?",
@@ -489,17 +324,6 @@ if st.session_state.step == "Introdução":
                 ],
                 "resposta": 1,
                 "explicacao": "Bancos centrais podem usar derivativos como ferramentas de política monetária, para intervenções no mercado cambial, gerenciamento de reservas internacionais e para obter informações de mercado através dos preços dos derivativos."
-            },
-            {
-                "pergunta": "O que é 'basis risk' (risco de base) no contexto de hedge com derivativos?",
-                "opcoes": [
-                    "O risco de que a bolsa de valores mude as regras de negociação",
-                    "O risco de que o preço de um ativo subjacente caia a zero",
-                    "O risco de que o hedge não compense perfeitamente as variações do ativo que está sendo protegido",
-                    "O risco de que o governo imponha novos impostos sobre derivativos"
-                ],
-                "resposta": 2,
-                "explicacao": "Risco de base é o risco de que o hedge com derivativos não compense perfeitamente as variações do ativo que está sendo protegido, devido a diferenças entre o ativo subjacente do derivativo e o ativo sendo hedgeado ou outros fatores de mercado."
             },
             {
                 "pergunta": "Qual é o significado do termo 'exposição nocional' em derivativos?",
@@ -557,39 +381,6 @@ if st.session_state.step == "Introdução":
                 "explicacao": "Rollover refere-se à prática de encerrar uma posição em um contrato futuro prestes a vencer e simultaneamente abrir uma posição similar em um contrato com vencimento posterior, permitindo manter a exposição ao mercado sem lidar com o vencimento do contrato original."
             },
             {
-                "pergunta": "Quais são os principais usos de contratos de swap?",
-                "opcoes": [
-                    "Especulação de curto prazo e day trading",
-                    "Entrega física de commodities",
-                    "Gerenciamento de risco de taxa de juros, risco cambial e risco de crédito",
-                    "Apenas investimento de longo prazo"
-                ],
-                "resposta": 2,
-                "explicacao": "Contratos de swap são primariamente utilizados para gerenciar riscos financeiros, incluindo risco de taxa de juros (swaps de taxa de juros), risco cambial (swaps de moeda) e, em alguns casos, risco de crédito (swaps de default de crédito)."
-            },
-            {
-                "pergunta": "O que é a 'ISDA Master Agreement'?",
-                "opcoes": [
-                    "Um contrato padronizado para negociação de futuros em bolsa",
-                    "Um acordo padrão que governa as transações de derivativos OTC entre as partes",
-                    "Um regulamento governamental obrigatório para todos os derivativos",
-                    "Uma licença necessária para negociar derivativos profissionalmente"
-                ],
-                "resposta": 1,
-                "explicacao": "A ISDA Master Agreement é um documento padronizado desenvolvido pela International Swaps and Derivatives Association que estabelece os termos e condições que governam as transações de derivativos OTC entre as partes, reduzindo o risco legal e a complexidade documental."
-            },
-            {
-                "pergunta": "Como os contratos futuros sobre índices financeiros são liquidados?",
-                "opcoes": [
-                    "Sempre por entrega física dos ativos componentes do índice",
-                    "Apenas através da transferência de propriedade do índice",
-                    "Por liquidação financeira baseada na diferença entre o preço contratado e o valor final do índice",
-                    "Através da emissão de novas ações das empresas do índice"
-                ],
-                "resposta": 2,
-                "explicacao": "Contratos futuros sobre índices financeiros são tipicamente liquidados financeiramente (cash settlement), baseados na diferença entre o preço contratado e o valor final do índice na data de vencimento, pois seria impraticável entregar fisicamente todos os componentes do índice."
-            },
-            {
                 "pergunta": "O que significa 'netting' em transações de derivativos?",
                 "opcoes": [
                     "O processo de combinar múltiplas posições ou obrigações para reduzir o risco e as transferências de valor",
@@ -599,17 +390,6 @@ if st.session_state.step == "Introdução":
                 ],
                 "resposta": 0,
                 "explicacao": "Netting refere-se ao processo de combinar múltiplas posições ou obrigações entre contrapartes para chegar a um valor líquido a ser transferido, reduzindo o risco de contraparte e o número/volume de liquidações necessárias."
-            },
-            {
-                "pergunta": "Que tipo de empresas tipicamente utiliza swaps de taxa de juros?",
-                "opcoes": [
-                    "Apenas pequenas empresas de tecnologia",
-                    "Apenas governos e entidades estatais",
-                    "Grandes corporações, instituições financeiras e emissores de dívida",
-                    "Apenas empresas de varejo"
-                ],
-                "resposta": 2,
-                "explicacao": "Swaps de taxa de juros são geralmente utilizados por grandes corporações, instituições financeiras e emissores de dívida que desejam gerenciar sua exposição a flutuações nas taxas de juros, convertendo pagamentos de taxa fixa para variável ou vice-versa."
             },
             {
                 "pergunta": "O que é um contrato futuro 'cash settled'?",
@@ -633,28 +413,6 @@ if st.session_state.step == "Introdução":
                 "resposta": 0,
                 "explicacao": "Hedge estático envolve estabelecer uma posição de hedge e mantê-la inalterada até o vencimento, enquanto hedge dinâmico envolve ajustes frequentes da posição de hedge em resposta às mudanças no mercado e nas condições do ativo sendo protegido."
             },
-            {
-                "pergunta": "Como a alta volatilidade do mercado afeta os preços dos derivativos?",
-                "opcoes": [
-                    "Volatilidade não tem efeito sobre os preços dos derivativos",
-                    "Maior volatilidade geralmente leva a preços mais baixos para todos os derivativos",
-                    "Maior volatilidade geralmente leva a preços mais altos para a maioria dos derivativos",
-                    "Maior volatilidade sempre reduz o interesse em derivativos"
-                ],
-                "resposta": 2,
-                "explicacao": "Maior volatilidade no mercado geralmente leva a preços mais altos para a maioria dos derivativos, pois aumenta o potencial de movimentos significativos nos preços dos ativos subjacentes, aumentando tanto o valor do hedge quanto as oportunidades para especuladores."
-            },
-            {
-                "pergunta": "O que são os 'contratos de diferença' (CFDs)?",
-                "opcoes": [
-                    "Contratos padronizados negociados exclusivamente em bolsas regulamentadas",
-                    "Derivativos OTC que permitem especular sobre movimentos de preços sem possuir o ativo subjacente",
-                    "Documentos legais que detalham as diferenças entre tipos de derivativos",
-                    "Contratos utilizados apenas para hedge por grandes instituições"
-                ],
-                "resposta": 1,
-                "explicacao": "Contratos de Diferença (CFDs) são derivativos OTC que permitem aos investidores especular sobre movimentos nos preços de ativos subjacentes sem possuí-los. O lucro ou prejuízo é baseado na diferença entre o preço de entrada e saída do contrato."
-            }
         ]
         
         # Combinar as listas de questões
