@@ -3449,7 +3449,7 @@ elif st.session_state.step == "Derivativos":
                     fixa (cupons) com potencial de valorização acionária. O investidor possui uma opção de compra 
                     \n**Exemplo na Animação:**
                     \n**O Cenário:**
-                    Emissão de dívida com cláusula de conversão em ações.
+                    Emissão de dívida com cláusula de conversão em ações ao preço fixo de R$20,00.
                     \n**Contrato Anfitrião:** Dívida corporativa (Debênture).
                     \n**O Derivativo (Opção):** O investidor tem o direito de, no vencimento, trocar o valor da 
                     dívida por ações da empresa a um preço pré-fixado.
@@ -3493,7 +3493,7 @@ elif st.session_state.step == "Derivativos":
                     "file": "braskem.html",
                     "description": """
                     **Caso Braskem** ilustra o colapso de COEs estruturados emitidos por bancos brasileiros 
-                    atrelados às ações da Braskem. Quando a empresa enfrentou grave crise, investidores de 
+                    atrelados a títulos de dívida da Braskem. Quando a empresa enfrentou grave crise, investidores de 
                     varejo sofreram perdas significativas, revelando como derivativos embutidos transferem 
                     risco complexo de mercado dos bancos para clientes que muitas vezes não compreendem 
                     plenamente a estrutura do produto.
