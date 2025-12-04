@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Como funciona uma Credit Linked Note (CLN)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .box-shadow-glow { box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+        .path-line { stroke-dasharray: 10; animation: dash 1s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: -20; } }
+        
+        /* Animação de pulso para o evento de crédito */
+        .credit-event-pulse {
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        
+        .coin {
+            transition: all 0.8s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-6">
+
+    <div class="max-w-5xl w-full bg-slate-900 rounded-xl border border-slate-700 shadow-2xl p-6">
+        
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-white">Anatomia de uma Credit Linked Note (CLN)</h1>
+            <p class="text-slate-400 mt-2">O investidor financia um título cujo risco está vinculado a uma terceira empresa.</p>
+        </header>
+
+        <!-- Área do Diagrama -->
+        <div class="relative bg-slate-800 rounded-lg p-8 h-[450px] border border-slate-600 mb-6 overflow-hidden">
+            
+            <!-- Legenda de Cenário -->
+            <div class="absolute top-4 left-4 bg-slate-900 px-4 py-2 rounded border border-slate-600">
+                <span class="text-xs text-slate-400 uppercase">Cenário Atual:</span>
+                <div id="scenario-badge" class="font-bold text-green-400">PAGAMENTO TOTAL (Sem Calote)</div>
+            </div>
+
+            <!-- Camada SVG para conexões -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none" id="svg-layer">
+                <!-- Linhas serão desenhadas via JS -->
+            </svg>
+
+            <!-- Entidades -->
+            <div class="flex justify-between items-center h-full relative z-10">
+                
+                <!-- 1. Investidor -->
+                <div id="node-investor" class="flex flex-col items-center w-48 p-4 bg-slate-700 rounded-lg border-2 border-blue-500 box-shadow-glow relative">
+                    <i data-lucide="user" class="w-10 h-10 text-blue-400 mb-2"></i>
+                    <h3 class="font-bold text-white">Investidor</h3>
+                    <p class="text-xs text-center text-slate-300 mt-2">Compra a CLN buscando alto retorno</p>
+                    <div id="investor-money" class="mt-2 bg-green-600 text-white text-xs px-2 py-1 rounded">Capital: R$ 100</div>
+                </div>
+
+                <!-- 2. Emissor (SPV/Banco) -->
+                <div id="node-issuer" class="flex flex-col items-center w-56 p-4 bg-slate-700 rounded-lg border-2 border-indigo-500 box-shadow-glow relative">
+                    <i data-lucide="landmark" class="w-10 h-10 text-indigo-400 mb-2"></i>
+                    <h3 class="font-bold text-white">Emissor (SPV)</h3>
+                    <p class="text-xs text-center text-slate-300 mt-2">Veículo que emite a nota e guarda o colateral</p>
+                    <div class="w-full bg-slate-800 h-16 mt-2 rounded border border-slate-600 flex items-center justify-center relative overflow-hidden">
+                        <span class="text-[10px] text-slate-500 absolute top-1">CAIXA / COLATERAL</span>
+                        <div id="vault-money" class="text-green-500 font-bold opacity-0 transition-opacity">$$$</div>
+                    </div>
+                </div>
+
+                <!-- 3. Entidade de Referência -->
+                <div id="node-reference" class="flex flex-col items-center w-48 p-4 bg-slate-700 rounded-lg border-2 border-slate-500 relative transition-colors duration-500">
+                    <i id="icon-factory" data-lucide="factory" class="w-10 h-10 text-slate-400 mb-2"></i>
+                    <h3 class="font-bold text-white">Entidade Referência</h3>
+                    <p class="text-xs text-center text-slate-300 mt-2">Empresa X (ex: Braskem)</p>
+                    <div id="status-reference" class="mt-2 bg-green-600 text-white text-xs px-2 py-1 rounded uppercase font-bold">Saudável</div>
+                    
+                    <!-- Link virtual -->
+                    <div class="absolute -left-12 top-1/2 -translate-y-1/2 text-xs text-slate-500 w-24 text-center bg-slate-800 px-1 rounded border border-slate-600 transform -rotate-90 origin-center hidden md:block" style="left: -40px;">Risco Sintético</div>
+                </div>
+
+            </div>
+
+            <!-- Partículas de Dinheiro (Elementos Móveis) -->
+            <div id="particle-money" class="absolute w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg opacity-0 z-20 transition-all duration-1000">$$</div>
+
+        </div>
+
+        <!-- Controles -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Painel de Passos -->
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-600">
+                <h4 class="font-bold text-indigo-400 mb-3 flex items-center gap-2">
+                    <i data-lucide="play-circle" class="w-4 h-4"></i> Fluxo da Operação
+                </h4>
+                <div class="space-y-2">
+                    <button onclick="runStep(1)" class="w-full text-left px-3 py-2 rounded hover:bg-slate-700 text-sm transition-colors border-l-2 border-transparent hover:border-blue-500" id="btn-step-1">1. Investimento Inicial (Compra da Nota)</button>
+                    <button onclick="runStep(2)" class="w-full text-left px-3 py-2 rounded hover:bg-slate-700 text-sm transition-colors border-l-2 border-transparent hover:border-blue-500" id="btn-step-2">2. Pagamento de Cupons (Juros)</button>
+                    <button onclick="runStep(3)" class="w-full text-left px-3 py-2 rounded hover:bg-slate-700 text-sm transition-colors border-l-2 border-transparent hover:border-blue-500" id="btn-step-3">3. Vencimento / Liquidação</button>
+                </div>
+            </div>
+
+            <!-- Painel de Cenário -->
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-600">
+                <h4 class="font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                    <i data-lucide="settings-2" class="w-4 h-4"></i> Configurar Cenário (Para o Passo 3)
+                </h4>
+                <div class="flex gap-2">
+                    <button onclick="setScenario('success')" id="btn-scenario-success" class="flex-1 py-2 px-4 rounded bg-green-600 text-white font-bold text-sm hover:bg-green-500 border-2 border-white">Sem Calote</button>
+                    <button onclick="setScenario('fail')" id="btn-scenario-fail" class="flex-1 py-2 px-4 rounded bg-slate-700 text-slate-300 font-bold text-sm hover:bg-red-900 border-2 border-transparent">Com Calote (Default)</button>
+                </div>
+                <p id="scenario-desc" class="text-xs text-slate-400 mt-3 h-10">
+                    A empresa paga suas dívidas. O investidor recebe 100% do capital de volta + juros.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let currentScenario = 'success';
+        let isAnimating = false;
+
+        // Elements
+        const elMoney = document.getElementById('particle-money');
+        const elVault = document.getElementById('vault-money');
+        const elRefStatus = document.getElementById('status-reference');
+        const elRefNode = document.getElementById('node-reference');
+        const elInvestorMoney = document.getElementById('investor-money');
+        const scenarioBadge = document.getElementById('scenario-badge');
+        const descText = document.getElementById('scenario-desc');
+
+        // Positions (calculated dynamically)
+        function getPos(id) {
+            const rect = document.getElementById(id).getBoundingClientRect();
+            const parent = document.querySelector('.relative.bg-slate-800').getBoundingClientRect();
+            return {
+                x: rect.left - parent.left + rect.width / 2,
+                y: rect.top - parent.top + rect.height / 2
+            };
+        }
+
+        function setScenario(type) {
+            currentScenario = type;
+            const btnSuccess = document.getElementById('btn-scenario-success');
+            const btnFail = document.getElementById('btn-scenario-fail');
+
+            if (type === 'success') {
+                btnSuccess.className = "flex-1 py-2 px-4 rounded bg-green-600 text-white font-bold text-sm hover:bg-green-500 border-2 border-white";
+                btnFail.className = "flex-1 py-2 px-4 rounded bg-slate-700 text-slate-300 font-bold text-sm hover:bg-red-900 border-2 border-transparent";
+                scenarioBadge.innerText = "PAGAMENTO TOTAL (Sem Calote)";
+                scenarioBadge.className = "font-bold text-green-400";
+                descText.innerText = "A empresa paga suas dívidas. O investidor recebe 100% do capital de volta + juros.";
+                
+                // Reset Visuals
+                elRefNode.className = "flex flex-col items-center w-48 p-4 bg-slate-700 rounded-lg border-2 border-slate-500 relative transition-colors duration-500";
+                elRefStatus.className = "mt-2 bg-green-600 text-white text-xs px-2 py-1 rounded uppercase font-bold";
+                elRefStatus.innerText = "Saudável";
+                document.getElementById('icon-factory').classList.remove('text-red-500');
+                document.getElementById('icon-factory').classList.add('text-slate-400');
+            } else {
+                btnFail.className = "flex-1 py-2 px-4 rounded bg-red-600 text-white font-bold text-sm hover:bg-red-500 border-2 border-white";
+                btnSuccess.className = "flex-1 py-2 px-4 rounded bg-slate-700 text-slate-300 font-bold text-sm hover:bg-green-900 border-2 border-transparent";
+                scenarioBadge.innerText = "DEFAULT (Calote)";
+                scenarioBadge.className = "font-bold text-red-500";
+                descText.innerText = "A empresa dá calote (ex: Braskem bonds caem). O Emissor usa o colateral para cobrir perdas e paga apenas o resto ao investidor.";
+            }
+        }
+
+        function animateMoney(fromId, toId, text, colorClass = "bg-green-500", duration = 1500) {
+            return new Promise(resolve => {
+                const start = getPos(fromId);
+                const end = getPos(toId);
+
+                elMoney.style.transition = 'none';
+                elMoney.style.left = `${start.x}px`;
+                elMoney.style.top = `${start.y}px`;
+                elMoney.innerText = text;
+                elMoney.className = `absolute w-12 h-12 ${colorClass} rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg z-20 flex-col leading-none border-2 border-white`;
+                elMoney.style.opacity = '1';
+
+                // Force reflow
+                void elMoney.offsetWidth;
+
+                elMoney.style.transition = `all ${duration/1000}s cubic-bezier(0.4, 0, 0.2, 1)`;
+                elMoney.style.left = `${end.x}px`;
+                elMoney.style.top = `${end.y}px`;
+
+                setTimeout(() => {
+                    elMoney.style.opacity = '0';
+                    resolve();
+                }, duration);
+            });
+        }
+
+async function runStep(step) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            const pInvestor = getPos('node-investor');
+            const pIssuer = getPos('node-issuer');
+            const pRef = getPos('node-reference');
+
+            if (step === 1) {
+                // Investimento
+                // FIX ADDED: Ensure it resets to green when starting over
+                elInvestorMoney.classList.remove('bg-red-600');
+                elInvestorMoney.classList.add('bg-green-600');
+
+                elInvestorMoney.innerText = "Capital: R$ 0";
+                await animateMoney('node-investor', 'node-issuer', 'R$ 100', 'bg-blue-500');
+                elVault.style.opacity = '1';
+                // Reset vault color just in case
+                elVault.classList.remove('text-red-500');
+                elVault.classList.add('text-green-500');
+                elVault.innerText = "R$ 100 (Títulos Públicos)";
+            } 
+            else if (step === 2) {
+                // Cupons (Juros)
+                await animateMoney('node-issuer', 'node-investor', 'Juros ++', 'bg-yellow-500');
+                elInvestorMoney.innerText = "Capital: R$ 0 + Juros";
+            }
+            else if (step === 3) {
+                // Vencimento
+                if (currentScenario === 'success') {
+                    await animateMoney('node-issuer', 'node-investor', 'R$ 100', 'bg-green-500');
+                    elInvestorMoney.innerText = "Capital: R$ 100 (Retorno Total)";
+                    elVault.style.opacity = '0';
+                } else {
+                    // Cenario de Calote
+                    // 1. A empresa fica vermelha
+                    elRefNode.className = "flex flex-col items-center w-48 p-4 bg-slate-800 rounded-lg border-4 border-red-600 relative credit-event-pulse";
+                    elRefStatus.className = "mt-2 bg-red-600 text-white text-xs px-2 py-1 rounded uppercase font-bold";
+                    elRefStatus.innerText = "CALOTE";
+                    document.getElementById('icon-factory').classList.remove('text-slate-400');
+                    document.getElementById('icon-factory').classList.add('text-red-500');
+
+                    // 2. Dinheiro do colateral "evapora"
+                    elVault.innerText = "R$ 20";
+                    elVault.classList.remove('text-green-500');
+                    elVault.classList.add('text-red-500');
+                    
+                    await new Promise(r => setTimeout(r, 1000));
+
+                    // 3. Investidor recebe sobras
+                    await animateMoney('node-issuer', 'node-investor', 'R$ 20', 'bg-red-600');
+                    
+                    // FIX ADDED: Change the investor badge to RED
+                    elInvestorMoney.classList.remove('bg-green-600');
+                    elInvestorMoney.classList.add('bg-red-600');
+                    elInvestorMoney.innerText = "Perda de R$ 80";
+                    
+                    elVault.style.opacity = '0';
+                }
+            }
+
+            isAnimating = false;
+        }
+                
+        // Setup inicial das linhas SVG (estático para simplificar)
+        function drawLines() {
+            const svg = document.getElementById('svg-layer');
+            const pInv = getPos('node-investor');
+            const pIss = getPos('node-issuer');
+            const pRef = getPos('node-reference');
+
+            // Linha Investidor -> Emissor (Sólida)
+            const line1 = `<line x1="${pInv.x + 60}" y1="${pInv.y}" x2="${pIss.x - 70}" y2="${pIss.y}" stroke="#475569" stroke-width="2" />`;
+            
+            // Linha Emissor -> Referência (Tracejada - Risco Sintético)
+            const line2 = `<line x1="${pIss.x + 70}" y1="${pIss.y}" x2="${pRef.x - 60}" y2="${pRef.y}" stroke="#64748b" stroke-width="2" stroke-dasharray="5,5" />`;
+
+            svg.innerHTML = line1 + line2;
+        }
+
+        // Redesenhar linhas ao carregar e redimensionar
+        window.onload = drawLines;
+        window.onresize = drawLines;
+        setTimeout(drawLines, 500); // Garantia extra
+
+    </script>
+</body>
+</html>

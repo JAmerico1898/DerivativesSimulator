@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COE de Capital Protegido - Mecânica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Slider Customizado */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #d946ef; border: 2px solid #fff; cursor: pointer; margin-top: -10px;
+            box-shadow: 0 0 10px rgba(217, 70, 239, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer; background: #334155; border-radius: 3px;
+        }
+
+        .bar-transition { transition: height 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
+        .fade-enter { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .poof-effect { animation: poof 0.6s ease-out forwards; }
+        @keyframes poof { 
+            0% { transform: scale(1); opacity: 1; filter: blur(0px); }
+            100% { transform: scale(1.5); opacity: 0; filter: blur(4px); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="max-w-5xl w-full bg-slate-900 rounded-xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Esquerda: Configuração e Cenário -->
+        <div class="p-6 md:w-5/12 border-b md:border-b-0 md:border-r border-slate-700 flex flex-col relative">
+            <header class="mb-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-purple-600 text-white text-xs px-2 py-1 rounded font-bold">EXEMPLO C</span>
+                    <span class="text-slate-400 text-xs uppercase tracking-widest">Capital Protegido</span>
+                </div>
+                <h1 class="text-2xl font-bold text-white">Engenharia do COE</h1>
+                <p class="text-sm text-slate-400 mt-2">Veja como 95% garante o capital e 5% busca o lucro.</p>
+            </header>
+
+            <!-- Investimento Inicial -->
+            <div class="bg-slate-800 p-4 rounded-lg mb-6 border border-slate-600">
+                <div class="text-xs text-slate-500 uppercase mb-1">Seu Investimento (Hoje)</div>
+                <div class="text-2xl font-bold text-white">R$ 100.000,00</div>
+            </div>
+
+            <!-- Slider do Mercado -->
+            <div class="mt-auto bg-slate-800 p-4 rounded-lg border border-slate-600">
+                <div class="flex justify-between mb-2">
+                    <span class="text-xs text-red-400 flex items-center gap-1"><i data-lucide="trending-down" class="w-3 h-3"></i> Bolsa Caiu</span>
+                    <span class="text-sm font-bold text-purple-300" id="market-display">S&P 500: +20%</span>
+                    <span class="text-xs text-green-400 flex items-center gap-1">Bolsa Subiu <i data-lucide="trending-up" class="w-3 h-3"></i></span>
+                </div>
+                <input type="range" id="market-slider" min="-30" max="50" step="1" value="0">
+                <p class="text-[10px] text-slate-500 mt-2 text-center">Simule o resultado após 5 anos</p>
+            </div>
+        </div>
+
+        <!-- Direita: A "Caixa Preta" do Banco -->
+        <div class="p-6 md:w-7/12 bg-slate-950 relative flex flex-col items-center justify-end" style="min-height: 500px;">
+            
+            <h2 class="absolute top-6 left-6 text-white font-bold flex items-center gap-2">
+                <i data-lucide="layers" class="text-slate-300"></i> Estrutura Interna
+            </h2>
+
+            <!-- Container das Barras -->
+            <div class="flex items-end gap-12 w-full justify-center pb-12 relative h-full">
+                
+                <!-- Linha de Referência (Capital Principal) -->
+                <div class="absolute w-full border-t border-slate-700 border-dashed z-0" style="bottom: 250px;">
+                    <span class="absolute right-0 -top-6 text-xs text-slate-500 bg-slate-900 px-1">Principal (R$ 100k)</span>
+                </div>
+
+                <!-- BARRA 1: Momento Zero (A Divisão) -->
+                <div class="flex flex-col items-center w-24 relative group">
+                    <div class="mb-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Dia 1<br>(A Compra)</div>
+                    
+                    <!-- Fatia da Opção (Risco) -->
+                    <div class="w-full bg-purple-600/80 h-[12px] rounded-t flex items-center justify-center text-[10px] text-white border-t border-purple-400 relative">
+                        <span class="absolute -right-12 text-purple-400 font-bold">5%</span>
+                    </div>
+                    
+                    <!-- Fatia da Renda Fixa (Garantia) -->
+                    <div class="w-full bg-blue-900/50 h-[238px] rounded-b border border-blue-800 flex flex-col justify-end items-center pb-2">
+                        <span class="text-blue-400 font-bold text-xs mb-1">95%</span>
+                        <i data-lucide="lock" class="w-4 h-4 text-blue-500/50"></i>
+                    </div>
+
+                    <div class="absolute -bottom-16 text-[10px] text-slate-500 text-center w-40">
+                        Banco separa R$ 5k para apostar e R$ 95k para garantir.
+                    </div>
+                </div>
+
+                <!-- Seta de Tempo -->
+                <div class="mb-32 text-slate-600">
+                    <i data-lucide="chevrons-right" class="w-8 h-8 animate-pulse"></i>
+                    <div class="text-[10px] text-center font-bold">5 Anos</div>
+                </div>
+
+                <!-- BARRA 2: Vencimento (O Resultado) -->
+                <div class="flex flex-col items-center w-24 relative">
+                    <div class="mb-4 text-xs font-bold text-white uppercase tracking-widest text-center glow-text">Vencimento</div>
+                    
+                    <!-- Parte Variável (Opção) -->
+                    <div id="bar-option" class="w-full bg-purple-500 bar-transition rounded-t shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-end justify-center relative border-x border-t border-purple-300 overflow-hidden" style="height: 0px;">
+                        <div class="w-full h-full absolute top-0 left-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xIDNoMXYxHDF6IiBmaWxsPSIjZmZmIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIG9wYWNpdHk9IjAuMiIvPjwvc3ZnPg==')]"></div>
+                        <span id="option-value-label" class="text-xs font-bold text-white mb-2 drop-shadow-md">+R$ 0</span>
+                    </div>
+
+                    <!-- Efeito de "Pó" (Smoke) -->
+                    <div id="smoke-effect" class="absolute w-24 h-24 -top-10 opacity-0 pointer-events-none flex items-center justify-center">
+                         <i data-lucide="cloud" class="text-slate-500 w-16 h-16 fill-slate-500"></i>
+                    </div>
+
+                    <!-- Parte Fixa (Principal Recuperado) -->
+                    <div class="w-full bg-blue-600 h-[250px] rounded-b shadow-[0_0_20px_rgba(37,99,235,0.2)] flex flex-col justify-center items-center relative z-10 border border-blue-400">
+                        <span class="text-white font-bold text-sm">R$ 100k</span>
+                        <span class="text-[9px] text-blue-200 text-center px-1 leading-tight mt-1">Garantido pela Renda Fixa</span>
+                    </div>
+
+                    <!-- Label Flutuante de "Virou Pó" -->
+                    <div id="poof-label" class="absolute -top-8 text-xs font-bold text-slate-500 opacity-0 transition-opacity whitespace-nowrap">
+                        Opção virou pó 💨
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Placar Final -->
+            <div class="absolute bottom-6 left-6 right-6 bg-slate-800/80 p-4 rounded-lg border border-slate-600 backdrop-blur-sm flex justify-between items-center">
+                <div>
+                    <div class="text-[10px] text-slate-400 uppercase">Valor Final de Resgate</div>
+                    <div class="text-2xl font-bold text-white" id="final-total">R$ 100.000</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[10px] text-slate-400 uppercase">Rentabilidade</div>
+                    <div class="text-xl font-bold text-slate-400" id="final-yield">0.0%</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Configuração Financeira
+        const PRINCIPAL = 100000;
+        const OPTION_BUDGET = 5000; // 5%
+        const LEVERAGE_FACTOR = 1.0; // Participação de 100% na alta (1.0x)
+        const PIXELS_PER_RL = 250 / 100000; // Escala gráfica
+
+        // Elementos
+        const slider = document.getElementById('market-slider');
+        const marketDisplay = document.getElementById('market-display');
+        const barOption = document.getElementById('bar-option');
+        const optionLabel = document.getElementById('option-value-label');
+        const finalTotal = document.getElementById('final-total');
+        const finalYield = document.getElementById('final-yield');
+        const poofLabel = document.getElementById('poof-label');
+        const smokeEffect = document.getElementById('smoke-effect');
+
+        function update() {
+            const marketChange = parseFloat(slider.value); // %
+            
+            // Texto do Slider
+            marketDisplay.innerText = `S&P 500: ${marketChange > 0 ? '+' : ''}${marketChange}%`;
+            if (marketChange > 0) marketDisplay.className = "text-sm font-bold text-green-400";
+            else if (marketChange < 0) marketDisplay.className = "text-sm font-bold text-red-400";
+            else marketDisplay.className = "text-sm font-bold text-slate-300";
+
+            // Cálculo do Retorno da Opção (Call)
+            // Se mercado cair, opção vale 0. Se subir, vale proporcional à alta sobre o nocional alavancado ou simplesmente o ganho
+            // Simplificação COE: Você ganha a % de alta aplicada ao Principal (se participação for 100%)
+            let optionGain = 0;
+
+            if (marketChange > 0) {
+                // Cenário de Alta
+                optionGain = PRINCIPAL * (marketChange / 100) * LEVERAGE_FACTOR;
+                
+                // Visual
+                barOption.style.height = `${optionGain * PIXELS_PER_RL}px`;
+                barOption.style.opacity = '1';
+                barOption.classList.remove('bg-slate-700');
+                barOption.classList.add('bg-purple-500');
+                
+                optionLabel.innerText = `+R$ ${(optionGain/1000).toFixed(1)}k`;
+                optionLabel.style.display = 'block';
+                
+                poofLabel.style.opacity = '0';
+                smokeEffect.classList.remove('poof-effect');
+            } else {
+                // Cenário de Baixa ou Zero (Capital Protegido)
+                optionGain = 0;
+                
+                // Visual
+                barOption.style.height = `0px`;
+                optionLabel.style.display = 'none';
+                
+                if (marketChange < 0) {
+                    poofLabel.style.opacity = '1';
+                    // Trigger simple smoke anim (resetting class trick)
+                    smokeEffect.classList.remove('poof-effect');
+                    void smokeEffect.offsetWidth; // trigger reflow
+                    smokeEffect.classList.add('poof-effect');
+                } else {
+                    poofLabel.style.opacity = '0';
+                }
+            }
+
+            // Resultado Final
+            const total = PRINCIPAL + optionGain;
+            const yieldPct = ((total - PRINCIPAL) / PRINCIPAL) * 100;
+
+            finalTotal.innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            if (yieldPct > 0) {
+                finalYield.innerText = `+${yieldPct.toFixed(1)}%`;
+                finalYield.className = "text-xl font-bold text-green-400";
+            } else {
+                finalYield.innerText = `0.0% (Protegido)`;
+                finalYield.className = "text-xl font-bold text-blue-400";
+            }
+        }
+
+        slider.addEventListener('input', update);
+        
+        // Init state
+        setTimeout(() => {
+            slider.value = 10; // Start with a positive example
+            update();
+        }, 500);
+
+    </script>
+</body>
+</html>

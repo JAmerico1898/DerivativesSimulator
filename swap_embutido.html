@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swap Embutido: Mecânica do Cap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Slider Customizado */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #06b6d4; border: 2px solid #fff; cursor: pointer; margin-top: -10px;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer; background: #334155; border-radius: 3px;
+        }
+
+        .pipe { position: relative; overflow: hidden; }
+        .flow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,255,255,0.2) 10px, rgba(255,255,255,0.2) 20px);
+            animation: flow 1s linear infinite;
+        }
+        @keyframes flow { from { transform: translateX(-20px); } to { transform: translateX(0); } }
+
+        .switch-lever { transition: transform 0.3s cubic-bezier(1.000, -0.600, 0.000, 1.650); }
+        .switched-on { transform: rotate(45deg); }
+        .switched-off { transform: rotate(-45deg); }
+        
+        .machine-panel {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="max-w-6xl w-full bg-slate-900 rounded-xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Painel Esquerdo: Controles e Input -->
+        <div class="p-6 md:w-5/12 border-b md:border-b-0 md:border-r border-slate-700 flex flex-col">
+            <header class="mb-8">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-cyan-600 text-white text-xs px-2 py-1 rounded font-bold">EXEMPLO 4</span>
+                    <span class="text-slate-400 text-xs uppercase tracking-widest">Swap Embutido (Cap)</span>
+                </div>
+                <h1 class="text-2xl font-bold text-white">Cláusula de Teto (Cap)</h1>
+                <p class="text-sm text-slate-400 mt-2">O título paga Libor + 2%, mas trava se a Libor passar de 5%.</p>
+            </header>
+
+            <!-- Mostrador Grande -->
+            <div class="bg-slate-800 p-6 rounded-lg border border-slate-600 mb-8 relative overflow-hidden">
+                <div class="text-xs text-slate-500 uppercase mb-1">Indexador Atual</div>
+                <div class="text-4xl font-bold text-white mb-2" id="libor-display">LIBOR: 3.0%</div>
+                
+                <!-- Status do Contrato -->
+                <div id="contract-mode" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold border border-blue-700 transition-colors">
+                    <i data-lucide="waves" class="w-3 h-3"></i> MODO FLUTUANTE
+                </div>
+            </div>
+
+            <!-- Slider -->
+            <div class="mt-auto bg-slate-800 p-4 rounded-lg border border-slate-600">
+                <div class="flex justify-between mb-2">
+                    <span class="text-xs text-slate-400">0%</span>
+                    <span class="text-xs text-cyan-400 font-bold">Ajustar Taxa Libor</span>
+                    <span class="text-xs text-slate-400">10%</span>
+                </div>
+                <input type="range" id="libor-slider" min="0" max="10" step="0.1" value="3.0">
+                <div class="flex justify-between mt-2 text-[10px] text-slate-500">
+                    <span>Mercado Calmo</span>
+                    <span>Gatilho em 5.0%</span>
+                    <span>Stress de Juros</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel Direito: A Máquina de Swap -->
+        <div class="p-6 md:w-7/12 machine-panel relative flex flex-col items-center">
+            
+            <h2 class="text-white font-bold mb-6 flex items-center gap-2 w-full">
+                <i data-lucide="arrow-left-right" class="text-slate-300"></i> Mecanismo de Fluxo
+            </h2>
+
+            <!-- Diagrama Mecânico -->
+            <div class="relative w-full h-64 flex items-center justify-center">
+                
+                <!-- Tubo Principal (Entrada) -->
+                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1/3 h-12 bg-slate-700 pipe rounded-l-lg border-y border-l border-slate-500 flex items-center justify-center z-10">
+                    <span class="text-xs text-slate-300 font-bold z-20 relative">Contrato Base</span>
+                    <div class="flow opacity-50"></div>
+                </div>
+
+                <!-- A Chave (Swap Switch) -->
+                <div class="absolute left-1/3 top-1/2 -translate-y-1/2 w-32 h-32 bg-slate-800 rounded-full border-4 border-slate-600 z-20 flex flex-col items-center justify-center shadow-2xl">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Trigger (5%)</div>
+                    <!-- Alavanca -->
+                    <div id="switch-lever" class="w-4 h-16 bg-slate-400 rounded switch-lever switched-off shadow-lg relative">
+                        <div class="w-6 h-6 bg-red-500 rounded-full absolute -top-2 -left-1 shadow-inner border border-red-400"></div>
+                    </div>
+                </div>
+
+                <!-- Tubo Saída 1: Flutuante (Cima) -->
+                <div class="absolute left-[45%] top-[30%] w-1/2 h-8 bg-slate-800 pipe rounded-r border border-slate-600 flex items-center justify-end px-4 opacity-100 transition-opacity" id="pipe-float">
+                    <span class="text-xs text-blue-400 font-bold mr-2">Libor + 2%</span>
+                    <div class="flow bg-blue-500/20" id="flow-float"></div>
+                </div>
+
+                <!-- Tubo Saída 2: Fixo (Baixo) -->
+                <div class="absolute left-[45%] top-[60%] w-1/2 h-8 bg-slate-800 pipe rounded-r border border-slate-600 flex items-center justify-end px-4 opacity-30 transition-opacity" id="pipe-fixed">
+                    <span class="text-xs text-orange-400 font-bold mr-2">Fixo 7% (Cap)</span>
+                    <div class="flow bg-orange-500/20 hidden" id="flow-fixed"></div>
+                </div>
+
+                <!-- Conectores visuais -->
+                <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
+                    <path d="M 220 128 L 280 90" stroke="#475569" stroke-width="4" fill="none" />
+                    <path d="M 220 128 L 280 165" stroke="#475569" stroke-width="4" fill="none" />
+                </svg>
+
+            </div>
+
+            <!-- Gráfico Dinâmico -->
+            <div class="mt-auto w-full h-40 bg-slate-900 rounded border border-slate-700 relative overflow-hidden">
+                <div class="absolute top-2 left-2 text-[10px] text-slate-500">Perfil de Pagamento (Juros)</div>
+                <canvas id="payoffCanvas" width="400" height="160" class="w-full h-full"></canvas>
+                
+                <!-- Label Resultado -->
+                <div id="result-label" class="absolute bottom-2 right-2 bg-slate-800 px-3 py-1 rounded text-lg font-bold text-white border border-slate-600">
+                    Total: 5.0%
+                </div>
+            </div>
+
+            <!-- Explicação Dinâmica -->
+            <div id="explanation-text" class="mt-4 text-center text-sm text-slate-400 h-10">
+                A taxa está abaixo do teto. O título segue o mercado.
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Parâmetros
+        const SPREAD = 2.0;
+        const CAP_TRIGGER = 5.0;
+        const CAP_RATE = CAP_TRIGGER + SPREAD; // 7.0%
+
+        // Elementos
+        const slider = document.getElementById('libor-slider');
+        const display = document.getElementById('libor-display');
+        const modeBadge = document.getElementById('contract-mode');
+        const lever = document.getElementById('switch-lever');
+        const pipeFloat = document.getElementById('pipe-float');
+        const pipeFixed = document.getElementById('pipe-fixed');
+        const flowFloat = document.getElementById('flow-float');
+        const flowFixed = document.getElementById('flow-fixed');
+        const resultLabel = document.getElementById('result-label');
+        const explanation = document.getElementById('explanation-text');
+        const canvas = document.getElementById('payoffCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function update() {
+            const libor = parseFloat(slider.value);
+            const isCapped = libor > CAP_TRIGGER;
+            const finalRate = isCapped ? CAP_RATE : (libor + SPREAD);
+
+            // 1. UI Básica
+            display.innerText = `LIBOR: ${libor.toFixed(1)}%`;
+            resultLabel.innerText = `Cupom Total: ${finalRate.toFixed(1)}%`;
+
+            // 2. Mecânica da Máquina (Swap Switch)
+            if (isCapped) {
+                // MODO FIXO (SWAP ATIVADO)
+                modeBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-900/50 text-orange-300 text-xs font-bold border border-orange-700 transition-colors";
+                modeBadge.innerHTML = `<i data-lucide="lock" class="w-3 h-3"></i> MODO FIXO (SWAP)`;
+                lucide.createIcons(); // Re-init icons for innerHTML change
+
+                lever.className = "w-4 h-16 bg-slate-400 rounded switch-lever switched-on shadow-lg relative";
+                
+                pipeFloat.classList.add('opacity-30');
+                pipeFixed.classList.remove('opacity-30');
+                
+                flowFloat.classList.add('hidden');
+                flowFixed.classList.remove('hidden');
+
+                explanation.innerHTML = `O gatilho de ${CAP_TRIGGER}% foi atingido. <span class="text-orange-400">O swap foi ativado</span> e sua taxa travou em ${CAP_RATE}%.`;
+            } else {
+                // MODO FLUTUANTE
+                modeBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold border border-blue-700 transition-colors";
+                modeBadge.innerHTML = `<i data-lucide="waves" class="w-3 h-3"></i> MODO FLUTUANTE`;
+                lucide.createIcons();
+
+                lever.className = "w-4 h-16 bg-slate-400 rounded switch-lever switched-off shadow-lg relative";
+
+                pipeFloat.classList.remove('opacity-30');
+                pipeFixed.classList.add('opacity-30');
+
+                flowFloat.classList.remove('hidden');
+                flowFixed.classList.add('hidden');
+
+                explanation.innerHTML = `A Libor está baixa. O derivativo está inativo e você recebe <span class="text-blue-400">Libor + ${SPREAD}%</span>.`;
+            }
+
+            drawGraph(libor, finalRate, isCapped);
+        }
+
+        function drawGraph(currentLibor, currentFinal, isCapped) {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const w = rect.width;
+            const h = rect.height;
+
+            const padding = 20;
+            const maxY = 12; // 12% rate max on graph
+            const maxX = 10; // 10% libor max
+
+            const mapX = (val) => padding + (val / maxX) * (w - 2 * padding);
+            const mapY = (val) => h - padding - (val / maxY) * (h - 2 * padding);
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Eixos
+            ctx.strokeStyle = '#475569';
+            ctx.beginPath();
+            ctx.moveTo(padding, padding); ctx.lineTo(padding, h - padding);
+            ctx.moveTo(padding, h - padding); ctx.lineTo(w - padding, h - padding);
+            ctx.stroke();
+
+            // 1. Linha "Uncapped" (Fantasma) - O que seria sem o swap
+            ctx.strokeStyle = '#334155';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(SPREAD));
+            ctx.lineTo(mapX(maxX), mapY(maxX + SPREAD));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 2. Linha "Capped" (Real) - O Swap Effect
+            ctx.strokeStyle = isCapped ? '#f97316' : '#06b6d4';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            // Segmento 1: Subida Linear
+            ctx.moveTo(mapX(0), mapY(SPREAD));
+            ctx.lineTo(mapX(CAP_TRIGGER), mapY(CAP_RATE));
+            
+            // Segmento 2: Flatline (Cap)
+            ctx.lineTo(mapX(maxX), mapY(CAP_RATE));
+            ctx.stroke();
+
+            // Ponto do Cap (Trigger)
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.arc(mapX(CAP_TRIGGER), mapY(CAP_RATE), 3, 0, Math.PI*2);
+            ctx.fill();
+
+            // Ponto Atual
+            const px = mapX(currentLibor);
+            const py = mapY(currentFinal);
+
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(px, py, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = isCapped ? '#f97316' : '#06b6d4';
+            ctx.stroke();
+
+            // Linha guia
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px, h - padding);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        slider.addEventListener('input', update);
+        setTimeout(update, 100);
+
+    </script>
+</body>
+</html>

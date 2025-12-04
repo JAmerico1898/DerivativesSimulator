@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debênture Conversível - Opção Call Embutida</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .transition-all-300 { transition: all 0.3s ease-in-out; }
+        
+        /* Slider Customizado */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #6366f1; border: 2px solid #fff; cursor: pointer; margin-top: -10px;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer; background: #334155; border-radius: 3px;
+        }
+
+        .glow-gold { box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); border-color: #facc15; }
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); border-color: #3b82f6; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="max-w-5xl w-full bg-slate-900 rounded-xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Painel Esquerdo: Controles e Cenário -->
+        <div class="p-6 md:w-5/12 border-b md:border-b-0 md:border-r border-slate-700 flex flex-col">
+            <header class="mb-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-indigo-600 text-white text-xs px-2 py-1 rounded font-bold">EXEMPLO A</span>
+                    <span class="text-slate-400 text-xs uppercase tracking-widest">Opção Call Embutida</span>
+                </div>
+                <h1 class="text-2xl font-bold text-white leading-tight">Debênture Conversível</h1>
+                <p class="text-sm text-slate-400 mt-2">Você possui uma dívida de R$ 1.000 que pode ser trocada por 50 ações da empresa.</p>
+            </header>
+
+            <!-- Dados Fixos -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-slate-800 p-3 rounded border border-slate-600">
+                    <div class="text-[10px] text-slate-500 uppercase">Valor de Face (Dívida)</div>
+                    <div class="text-lg font-bold text-blue-400">R$ 1.000</div>
+                    <div class="text-[10px] text-slate-500">Garantia Mínima</div>
+                </div>
+                <div class="bg-slate-800 p-3 rounded border border-slate-600">
+                    <div class="text-[10px] text-slate-500 uppercase">Preço de Conversão</div>
+                    <div class="text-lg font-bold text-yellow-400">R$ 20,00</div>
+                    <div class="text-[10px] text-slate-500">por Ação (50 ações)</div>
+                </div>
+            </div>
+
+            <!-- Slider de Ação -->
+            <div class="mt-auto bg-slate-800 p-4 rounded-lg border border-slate-600">
+                <div class="flex justify-between mb-2">
+                    <span class="text-xs text-slate-400 flex items-center gap-1"><i data-lucide="trending-down" class="w-3 h-3"></i> Baixa</span>
+                    <span class="text-sm font-bold text-white" id="stock-price-display">Preço Ação: R$ 15,00</span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1">Alta <i data-lucide="trending-up" class="w-3 h-3"></i></span>
+                </div>
+                <input type="range" id="stock-slider" min="5" max="40" step="0.5" value="15">
+            </div>
+        </div>
+
+        <!-- Painel Direito: A Decisão e o Gráfico -->
+        <div class="p-6 md:w-7/12 bg-slate-800 relative flex flex-col">
+            
+            <h2 class="text-white font-bold mb-4 flex items-center gap-2">
+                <i data-lucide="scale" class="text-slate-300"></i> Decisão no Vencimento
+            </h2>
+
+            <!-- Cards de Decisão -->
+            <div class="flex gap-4 mb-6 relative">
+                
+                <!-- Card Dívida (Host) -->
+                <div id="card-bond" class="flex-1 p-4 rounded-lg border-2 bg-slate-700 transition-all-300 flex flex-col items-center opacity-50">
+                    <div class="mb-2 p-2 rounded-full bg-slate-600"><i data-lucide="landmark" class="w-6 h-6 text-blue-400"></i></div>
+                    <div class="text-xs text-slate-400 uppercase font-bold">Ficar com a Dívida</div>
+                    <div class="text-xl font-bold text-white mt-1">R$ 1.000</div>
+                    <div class="text-[10px] text-slate-400 text-center mt-2">Contrato Anfitrião</div>
+                </div>
+
+                <!-- Ícone VS -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 rounded-full p-2 z-10 border border-slate-600 text-xs font-bold text-slate-500">OU</div>
+
+                <!-- Card Ações (Derivativo) -->
+                <div id="card-stock" class="flex-1 p-4 rounded-lg border-2 bg-slate-700 transition-all-300 flex flex-col items-center opacity-50">
+                    <div class="mb-2 p-2 rounded-full bg-slate-600"><i data-lucide="bar-chart-3" class="w-6 h-6 text-yellow-400"></i></div>
+                    <div class="text-xs text-slate-400 uppercase font-bold">Converter em Ações</div>
+                    <div class="text-xl font-bold text-white mt-1" id="equity-value">R$ 750</div>
+                    <div class="text-[10px] text-slate-400 text-center mt-2">Opção de Call</div>
+                </div>
+
+            </div>
+
+            <!-- Gráfico Payoff -->
+            <div class="flex-1 bg-slate-900 rounded border border-slate-700 relative overflow-hidden">
+                <div class="absolute top-2 left-2 text-[10px] text-slate-500">Perfil de Payoff (Retorno)</div>
+                <canvas id="chartCanvas" width="400" height="200" class="w-full h-full object-contain"></canvas>
+                
+                <!-- Overlay de Resultado -->
+                <div id="result-overlay" class="absolute bottom-4 right-4 bg-slate-800/90 border border-slate-600 p-3 rounded backdrop-blur-sm">
+                    <div class="text-[10px] text-slate-400">Valor Final Recebido</div>
+                    <div class="text-xl font-bold text-white" id="final-value">R$ 1.000</div>
+                    <div class="text-xs font-bold mt-1" id="final-status">Protegido pelo Piso</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Constantes do Contrato
+        const FACE_VALUE = 1000;
+        const CONVERSION_PRICE = 20;
+        const SHARES = FACE_VALUE / CONVERSION_PRICE; // 50 ações
+
+        // Elementos
+        const slider = document.getElementById('stock-slider');
+        const priceDisplay = document.getElementById('stock-price-display');
+        const equityValueDisplay = document.getElementById('equity-value');
+        const cardBond = document.getElementById('card-bond');
+        const cardStock = document.getElementById('card-stock');
+        const finalValueDisplay = document.getElementById('final-value');
+        const finalStatusDisplay = document.getElementById('final-status');
+        const canvas = document.getElementById('chartCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function update() {
+            const stockPrice = parseFloat(slider.value);
+            const equityValue = stockPrice * SHARES;
+            
+            // 1. Atualizar Textos
+            priceDisplay.innerText = `Preço Ação: R$ ${stockPrice.toFixed(2)}`;
+            equityValueDisplay.innerText = `R$ ${equityValue.toLocaleString('pt-BR')}`;
+
+            // 2. Lógica de Decisão (A Opção)
+            const isConversion = equityValue > FACE_VALUE;
+            const finalValue = Math.max(equityValue, FACE_VALUE);
+
+            if (isConversion) {
+                // Estado: CONVERTER (In the Money)
+                cardStock.className = "flex-1 p-4 rounded-lg border-2 bg-slate-800 transition-all-300 flex flex-col items-center glow-gold opacity-100 transform scale-105";
+                cardBond.className = "flex-1 p-4 rounded-lg border-2 bg-slate-700 transition-all-300 flex flex-col items-center opacity-40 grayscale";
+                
+                finalStatusDisplay.innerText = "🚀 Lucro com Ações (Upside)";
+                finalStatusDisplay.className = "text-xs font-bold mt-1 text-yellow-400";
+            } else {
+                // Estado: MANTER DÍVIDA (Out of the Money / At the Money)
+                cardBond.className = "flex-1 p-4 rounded-lg border-2 bg-slate-800 transition-all-300 flex flex-col items-center glow-blue opacity-100 transform scale-105";
+                cardStock.className = "flex-1 p-4 rounded-lg border-2 bg-slate-700 transition-all-300 flex flex-col items-center opacity-40 grayscale";
+                
+                finalStatusDisplay.innerText = "🛡️ Protegido pela Renda Fixa";
+                finalStatusDisplay.className = "text-xs font-bold mt-1 text-blue-400";
+            }
+
+            finalValueDisplay.innerText = `R$ ${finalValue.toLocaleString('pt-BR')}`;
+
+            // 3. Desenhar Gráfico
+            drawChart(stockPrice, equityValue, finalValue);
+        }
+
+        function drawChart(currentPrice, currentEquity, currentFinal) {
+            // Ajustar resolução do canvas
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const w = rect.width;
+            const h = rect.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Margens e Escalas
+            const padding = 30;
+            const maxPriceX = 40; // Max slider value
+            const maxValueY = 2000; // R$ 2000 topo do gráfico
+
+            const scaleX = (val) => padding + (val / maxPriceX) * (w - 2 * padding);
+            const scaleY = (val) => h - padding - (val / maxValueY) * (h - 2 * padding);
+
+            // Eixos
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding); ctx.lineTo(padding, h - padding); // Y
+            ctx.moveTo(padding, h - padding); ctx.lineTo(w - padding, h - padding); // X
+            ctx.stroke();
+
+            // 1. Linha do Bond Floor (Reta Horizontal)
+            ctx.strokeStyle = '#3b82f6'; // Blue
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(scaleX(0), scaleY(FACE_VALUE));
+            ctx.lineTo(scaleX(maxPriceX), scaleY(FACE_VALUE));
+            ctx.stroke();
+            
+            // Label Bond Floor
+            ctx.fillStyle = '#3b82f6';
+            ctx.font = '10px Arial';
+            ctx.fillText("Bond Floor (R$ 1k)", scaleX(2), scaleY(FACE_VALUE) - 5);
+
+            // 2. Linha da Conversão (Diagonal pura das ações)
+            ctx.strokeStyle = '#facc15'; // Yellow
+            ctx.setLineDash([2, 2]);
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.moveTo(scaleX(0), scaleY(0));
+            ctx.lineTo(scaleX(maxPriceX), scaleY(maxPriceX * SHARES));
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+            ctx.setLineDash([]);
+
+            // 3. Linha Efétiva (O Taco de Hóquei) - O caminho do investidor
+            // Desenha a linha grossa que segue o MAX(Bond, Stock)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            // Parte Reta
+            ctx.moveTo(scaleX(0), scaleY(FACE_VALUE));
+            ctx.lineTo(scaleX(CONVERSION_PRICE), scaleY(FACE_VALUE));
+            
+            // Parte Inclinada
+            ctx.lineTo(scaleX(maxPriceX), scaleY(maxPriceX * SHARES));
+            ctx.stroke();
+
+            // 4. Ponto Atual (Bolinha)
+            const px = scaleX(currentPrice);
+            const py = scaleY(currentFinal);
+
+            ctx.fillStyle = currentEquity > FACE_VALUE ? '#facc15' : '#3b82f6';
+            ctx.beginPath();
+            ctx.arc(px, py, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Linha guia vertical
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.2;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px, h - padding);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        slider.addEventListener('input', update);
+        
+        // Init (Força um resize no canvas para pegar o tamanho certo)
+        setTimeout(update, 100);
+        window.addEventListener('resize', update);
+
+    </script>
+</body>
+</html>

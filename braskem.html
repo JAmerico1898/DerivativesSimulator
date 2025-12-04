@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colapso COE Braskem - Simulação Interativa</title>
+    <!-- Importando Tailwind CSS para estilo rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Importando Lucide Icons (versão script) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .step-active { border-color: #3b82f6; background-color: #1e293b; }
+        .connector { transition: all 1s ease; }
+        .money-particle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            animation: flow 1.5s infinite linear;
+        }
+        @keyframes flow {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Cabeçalho -->
+    <header class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Anatomia do Colapso: COE Braskem</h1>
+        <p class="text-gray-400">Entenda como o Credit Linked Note (CLN) destruiu o capital dos investidores</p>
+    </header>
+
+    <!-- Área Principal da Animação -->
+    <main class="relative w-full max-w-4xl bg-slate-900 rounded-xl border border-slate-700 p-8 shadow-2xl overflow-hidden" style="min-height: 500px;">
+        
+        <!-- Passo Atual Descrição -->
+        <div id="step-description" class="absolute top-4 left-4 right-4 bg-slate-800 p-4 rounded-lg border-l-4 border-blue-500 z-10 transition-all duration-300">
+            <h3 class="font-bold text-lg text-blue-400 mb-1" id="step-title">Passo 1: Emissão de Dívida</h3>
+            <p class="text-sm text-gray-300" id="step-text">A Braskem emite títulos de dívida (Bonds) no exterior para captar dólares.</p>
+        </div>
+
+        <!-- Cenário (Entidades) -->
+        <div class="relative w-full h-full mt-16 flex justify-between items-center px-8" style="height: 350px;">
+            
+            <!-- Entidade: Braskem -->
+            <div id="entity-braskem" class="flex flex-col items-center gap-2 z-10 transition-all duration-500">
+                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-600 shadow-lg relative">
+                    <i data-lucide="factory" class="w-10 h-10 text-orange-500"></i>
+                    <!-- Status do Bond -->
+                    <div id="bond-status" class="hidden absolute -top-2 -right-2 bg-green-600 text-xs px-2 py-0.5 rounded-full text-white font-bold">100%</div>
+                </div>
+                <span class="font-bold">Braskem (Holanda)</span>
+                <span class="text-xs text-gray-500">Emissor Global</span>
+            </div>
+
+            <!-- Conector 1 -->
+            <div class="flex-1 h-1 bg-slate-700 relative mx-4">
+                <div id="conn-1" class="h-full bg-blue-500 w-0 transition-all duration-1000"></div>
+                <div id="flow-1" class="hidden absolute top-1/2 left-0 w-full -translate-y-1/2 text-center text-xs text-blue-300 font-mono">Bond $$$ &rarr;</div>
+            </div>
+
+            <!-- Entidade: Banco -->
+            <div id="entity-bank" class="flex flex-col items-center gap-2 z-10 transition-all duration-500">
+                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-600 shadow-lg">
+                    <i data-lucide="landmark" class="w-10 h-10 text-blue-500"></i>
+                </div>
+                <span class="font-bold">Banco Emissor</span>
+                <span class="text-xs text-gray-500">Estruturador COE</span>
+            </div>
+
+            <!-- Conector 2 -->
+            <div class="flex-1 h-1 bg-slate-700 relative mx-4">
+                <div id="conn-2" class="h-full bg-green-500 w-0 transition-all duration-1000"></div>
+                <div id="flow-2" class="hidden absolute top-1/2 left-0 w-full -translate-y-1/2 text-center text-xs text-green-300 font-mono">COE IPCA+ &rarr;</div>
+            </div>
+
+            <!-- Entidade: Investidor -->
+            <div id="entity-investor" class="flex flex-col items-center gap-2 z-10 transition-all duration-500">
+                <div id="investor-icon-bg" class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-600 shadow-lg relative">
+                    <i data-lucide="users" class="w-10 h-10 text-green-500"></i>
+                    <!-- Carteira -->
+                    <div id="wallet-badge" class="absolute -bottom-2 bg-slate-700 border border-slate-500 text-xs px-2 py-1 rounded text-white">R$ 100k</div>
+                </div>
+                <span class="font-bold">Investidor PF</span>
+                <span class="text-xs text-gray-500">Varejo</span>
+            </div>
+
+        </div>
+
+        <!-- Alerta de Crise -->
+        <div id="crisis-alert" class="hidden absolute inset-0 bg-red-900/20 backdrop-blur-sm flex items-center justify-center z-20 flex-col animate-pulse">
+            <i data-lucide="triangle-alert" class="w-24 h-24 text-red-500 mb-4"></i>
+            <h2 class="text-4xl font-black text-red-500 uppercase tracking-widest">EVENTO DE CRÉDITO</h2>
+            <p class="text-white mt-2 font-mono">Preço do Bond &lt; 40%</p>
+        </div>
+
+    </main>
+
+    <!-- Controles -->
+    <div class="flex gap-4 mt-8">
+        <button onclick="prevStep()" id="btn-prev" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Anterior
+        </button>
+        
+        <div class="flex items-center gap-2 px-4 bg-slate-800 rounded-lg border border-slate-700">
+            <span class="text-sm text-gray-400">Passo</span>
+            <span id="step-counter" class="text-xl font-bold text-white">1</span>
+            <span class="text-sm text-gray-400">/ 5</span>
+        </div>
+
+        <button onclick="nextStep()" id="btn-next" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2">
+            Próximo <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+    </div>
+
+    <script>
+        // Inicializa ícones
+        lucide.createIcons();
+
+        // Estado
+        let currentStep = 1;
+        const totalSteps = 5;
+
+        // Elementos DOM
+        const els = {
+            title: document.getElementById('step-title'),
+            text: document.getElementById('step-text'),
+            counter: document.getElementById('step-counter'),
+            btnPrev: document.getElementById('btn-prev'),
+            btnNext: document.getElementById('btn-next'),
+            conn1: document.getElementById('conn-1'),
+            conn2: document.getElementById('conn-2'),
+            flow1: document.getElementById('flow-1'),
+            flow2: document.getElementById('flow-2'),
+            bondStatus: document.getElementById('bond-status'),
+            wallet: document.getElementById('wallet-badge'),
+            crisisAlert: document.getElementById('crisis-alert'),
+            entityBraskem: document.getElementById('entity-braskem'),
+            entityInvestor: document.getElementById('entity-investor'),
+            investorIconBg: document.getElementById('investor-icon-bg')
+        };
+
+        const stepsData = [
+            {
+                title: "1. Emissão do Bond (Exterior)",
+                text: "A Braskem emite títulos de dívida em Dólar no mercado internacional. Investidores globais compram esses papéis.",
+                onEnter: () => {
+                    els.conn1.style.width = "0%";
+                    els.flow1.classList.add('hidden');
+                    els.bondStatus.classList.add('hidden');
+                    resetStyles();
+                }
+            },
+            {
+                title: "2. Montagem do COE",
+                text: "O Banco compra esse risco lá fora e 'empacota' em um COE. Ele vende ao investidor brasileiro prometendo IPCA + 8%, muito acima da média.",
+                onEnter: () => {
+                    els.conn1.style.width = "100%";
+                    els.conn2.style.width = "100%";
+                    els.flow1.classList.remove('hidden');
+                    els.flow2.classList.remove('hidden');
+                    els.bondStatus.classList.remove('hidden');
+                    els.bondStatus.innerText = "100%";
+                    els.bondStatus.className = "absolute -top-2 -right-2 bg-green-600 text-xs px-2 py-0.5 rounded-full text-white font-bold";
+                }
+            },
+            {
+                title: "3. Cenário de Normalidade",
+                text: "Enquanto a Braskem paga suas dívidas e o título vale perto de 100%, o investidor vê seu extrato render bonitinho. Parece seguro.",
+                onEnter: () => {
+                    els.crisisAlert.classList.add('hidden');
+                    els.entityBraskem.classList.remove('opacity-50', 'grayscale');
+                    els.bondStatus.innerText = "95%";
+                    els.bondStatus.className = "absolute -top-2 -right-2 bg-green-500 text-xs px-2 py-0.5 rounded-full text-white font-bold";
+                }
+            },
+            {
+                title: "4. O Colapso (Trigger)",
+                text: "Crise geológica e ratings rebaixados. O bond da Braskem despenca para 30% do valor. O 'Gatilho' do COE é ativado.",
+                onEnter: () => {
+                    els.crisisAlert.classList.remove('hidden');
+                    els.entityBraskem.classList.add('shake', 'grayscale');
+                    els.bondStatus.innerText = "30%";
+                    els.bondStatus.className = "absolute -top-2 -right-2 bg-red-600 text-xs px-2 py-0.5 rounded-full text-white font-bold animate-pulse";
+                    els.conn2.classList.add('bg-red-500');
+                    els.flow2.innerText = "LIQUIDAÇÃO!";
+                    els.flow2.classList.add('text-red-500', 'font-bold');
+                }
+            },
+            {
+                title: "5. Prejuízo Realizado",
+                text: "O COE é encerrado e vendido pelo valor de mercado dos títulos podres. O investidor recebe apenas o resíduo (aprox. 34%).",
+                onEnter: () => {
+                    els.crisisAlert.classList.add('hidden');
+                    els.entityBraskem.classList.remove('shake');
+                    els.investorIconBg.classList.add('bg-red-900', 'border-red-500');
+                    els.wallet.innerText = "R$ 34k";
+                    els.wallet.className = "absolute -bottom-2 bg-red-700 border border-red-500 text-xs px-2 py-1 rounded text-white font-bold";
+                    els.text.innerHTML += " <br><strong class='text-red-400'>Perda de 64% do capital.</strong>";
+                }
+            }
+        ];
+
+        function resetStyles() {
+            els.conn1.style.width = "0%";
+            els.conn2.style.width = "0%";
+            els.conn2.classList.remove('bg-red-500');
+            els.conn2.classList.add('bg-green-500');
+            els.flow1.classList.add('hidden');
+            els.flow2.classList.add('hidden');
+            els.flow2.innerText = "COE IPCA+ →";
+            els.flow2.classList.remove('text-red-500', 'font-bold');
+            els.crisisAlert.classList.add('hidden');
+            els.entityBraskem.classList.remove('shake', 'grayscale', 'opacity-50');
+            els.investorIconBg.classList.remove('bg-red-900', 'border-red-500');
+            els.investorIconBg.classList.add('bg-slate-800', 'border-slate-600');
+            els.wallet.innerText = "R$ 100k";
+            els.wallet.className = "absolute -bottom-2 bg-slate-700 border border-slate-500 text-xs px-2 py-1 rounded text-white";
+        }
+
+        function updateUI() {
+            const data = stepsData[currentStep - 1];
+            els.title.innerText = data.title;
+            els.text.innerHTML = data.text;
+            els.counter.innerText = currentStep;
+            
+            // Botões
+            els.btnPrev.disabled = currentStep === 1;
+            els.btnNext.disabled = currentStep === totalSteps;
+            
+            // Executa lógica do passo
+            if(data.onEnter) data.onEnter();
+        }
+
+        window.nextStep = () => {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateUI();
+            }
+        };
+
+        window.prevStep = () => {
+            if (currentStep > 1) {
+                currentStep--;
+                // Reset visual pesado ao voltar
+                resetStyles();
+                // Re-aplica passos anteriores logicamente se necessário (simplificado aqui re-executando o atual)
+                setTimeout(() => updateUI(), 50); 
+            }
+        };
+
+        // Início
+        updateUI();
+
+    </script>
+</body>
+</html>
