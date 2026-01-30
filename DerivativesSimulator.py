@@ -461,7 +461,8 @@ def render_home():
     # Footer
     st.markdown("""
     <div class="footer">
-        <p>© 2025 Laboratório de Derivativos | COPPEAD/UFRJ</p>
+        <p>© 2025 Laboratório de Derivativos</p>
+        <p> Prof. José Américo | COPPEAD/UFRJ</p>
         <p>Desenvolvido para fins educacionais. Operações reais envolvem complexidades adicionais.</p>
     </div>
     """, unsafe_allow_html=True)
