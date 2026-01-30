@@ -292,11 +292,13 @@ MAIN_CSS = """
     /* Welcome text styling */
     .welcome-text {
         text-align: center;
-        max-width: 800px;
-        margin: 0 auto 2rem auto;
+        width: 100%;
+        margin: 0 0 2rem 0;
+        padding: 0 2rem;
         color: #444;
         font-size: 1.05rem;
         line-height: 1.7;
+        box-sizing: border-box;
     }
 </style>
 """
