@@ -44,6 +44,34 @@ DERIVATIVES_INFO = {
         \n**Análise:** O investidor comprou, efetivamente, um contrato futuro de ouro, mas "embalado" como um CDB para facilitar o acesso ou tributação.
         """
     },
+    "Efeito das Margens no Mercado Futuro": {
+        "file": "efeito_margens_futuro.html",
+        "description": """
+        **Efeito das Margens no Mercado Futuro** demonstra como ajustes nas exigências de margem 
+        pela bolsa de derivativos (CME) podem desencadear quedas abruptas no preço à vista de um ativo.
+        \n**Caso Real: O Crash da Prata de Janeiro/Fevereiro de 2026**
+        \nEm janeiro de 2026, a prata atingiu um pico recorde de **US$ 121,67/oz**, impulsionada por 
+        especulação intensa, compras de investidores chineses e expectativas de política monetária 
+        frouxa nos EUA. O rali acumulou ganhos de mais de 60% em poucas semanas.
+        \n**O Gatilho:** Em 30 de janeiro, a CME (Chicago Mercantile Exchange) anunciou aumento nas 
+        margens iniciais para contratos de metais preciosos: **prata de 11% para 15%** e **ouro de 6% para 8%**.
+        \n**O Efeito Cascata:**
+        \n1. **Chamadas de margem em massa** — especuladores alavancados não conseguiram depositar 
+        as garantias adicionais exigidas.
+        \n2. **Liquidações forçadas** — posições foram fechadas compulsoriamente, gerando vendas 
+        maciças nos futuros.
+        \n3. **Contágio para o preço spot** — por arbitragem, a queda nos futuros arrastou o preço 
+        à vista do metal.
+        \n4. **Espiral descendente** — novas quedas geraram mais margin calls, mais liquidações e 
+        mais quedas, num ciclo vicioso de desalavancagem.
+        \n**Resultado:** A prata despencou **31,4% em um único dia** (30/jan) — a segunda pior queda 
+        diária da história do metal — e acumulou perda de **~40% em 4 dias**, caindo para US$ 71,33/oz.
+        \n**Lição Pedagógica:** As regras do mercado de derivativos (como exigências de margem) podem 
+        ser mais poderosas que a oferta e demanda do ativo subjacente. O episódio evoca paralelos com 
+        o crash da prata de 1980 (caso dos irmãos Hunt), quando a COMEX também elevou margens 
+        dramaticamente para conter especulação.
+        """
+    },
     "Swap Embutido": {
         "file": "swap_embutido.html",
         "description": """
@@ -158,6 +186,10 @@ def render():
     with st.expander("ℹ️ Explicação sobre " + selected_derivative, expanded=True):
         st.markdown(DERIVATIVES_INFO[selected_derivative]["description"])
     
+    # Determine appropriate height for the animation
+    # The margin effect animation is taller due to its multi-section layout
+    animation_height = 1200 if selected_derivative == "Efeito das Margens no Mercado Futuro" else 1100
+    
     # Button to run animation
     if st.button("🎬 Executar Animação", key="embutidos_run_animation"):
         html_file = DERIVATIVES_INFO[selected_derivative]["file"]
@@ -167,7 +199,7 @@ def render():
             with open(html_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
-            components.html(html_content, height=1100, scrolling=True)
+            components.html(html_content, height=animation_height, scrolling=True)
             
         except FileNotFoundError:
             st.error(f"❌ Arquivo '{html_file}' não encontrado. Verifique se o arquivo está no diretório correto.")

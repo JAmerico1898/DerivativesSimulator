@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Efeito das Margens no Mercado Futuro</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Sans+3:wght@300;400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f172a; color: #e2e8f0; font-family: 'Source Sans 3', sans-serif; }
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  button { cursor: pointer; outline: none; }
+  button:hover { filter: brightness(1.1); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── DATA ───────────────────────────────────────────── */
+const PRICE_DATA = [
+  { date: "06/Jan", price: 30.2, phase: "pre" },
+  { date: "10/Jan", price: 35.5, phase: "pre" },
+  { date: "14/Jan", price: 42.1, phase: "rally" },
+  { date: "17/Jan", price: 51.8, phase: "rally" },
+  { date: "20/Jan", price: 63.4, phase: "rally" },
+  { date: "22/Jan", price: 74.0, phase: "rally" },
+  { date: "24/Jan", price: 86.5, phase: "rally" },
+  { date: "27/Jan", price: 98.2, phase: "rally" },
+  { date: "29/Jan", price: 121.67, phase: "peak" },
+  { date: "30/Jan", price: 78.53, phase: "crash" },
+  { date: "02/Fev", price: 71.33, phase: "crash" },
+  { date: "03/Fev", price: 82.0, phase: "recovery" },
+];
+
+const TIMELINE_EVENTS = [
+  { date: "Jan 2026", title: "Rali Explosivo", desc: "Especulação intensa + compras chinesas + expectativa de juros baixos nos EUA impulsionam a prata.", icon: "\u{1F680}", phase: "rally" },
+  { date: "29/Jan", title: "Pico Histórico: $121,67/oz", desc: "A prata atinge máxima recorde. Ganhos acumulados de +60% em poucas semanas. Mercado superalavancado.", icon: "\u26A1", phase: "peak" },
+  { date: "30/Jan", title: "CME Eleva Margens", desc: "Margem inicial sobe de 11% \u2192 15% para prata e 6% \u2192 8% para ouro. Liquidações forçadas em massa.", icon: "\u{1F528}", phase: "crash" },
+  { date: "30/Jan", title: "Queda de \u221231,4%", desc: "Segunda pior queda diária na história. Futuros fecham a $78,53. Prata à vista cai 27,1%.", icon: "\u{1F4C9}", phase: "crash" },
+  { date: "02/Fev", title: "Mínima de $71,33", desc: "Queda total de ~40% em 4 dias. Perda acumulada de ~$50/oz desde o pico.", icon: "\u{1F4A5}", phase: "crash" },
+];
+
+const MECHANISM_STEPS = [
+  { id: 1, title: "Mercado Superaquecido", icon: "\u{1F525}", desc: "Especuladores acumulam posições compradas alavancadas em futuros de prata, apostando na continuação do rali." },
+  { id: 2, title: "CME Eleva Margens", icon: "\u{1F3DB}\uFE0F", desc: "A bolsa de derivativos aumenta a margem inicial de 11% para 15%, exigindo mais garantias de cada participante." },
+  { id: 3, title: "Chamada de Margem", icon: "\u{1F4DE}", desc: "Traders alavancados não conseguem depositar a garantia adicional exigida. Recebem margin calls imediatos." },
+  { id: 4, title: "Liquidação Forçada", icon: "\u26A0\uFE0F", desc: "Posições são fechadas compulsoriamente. Vendas em massa nos futuros pressionam os preços para baixo." },
+  { id: 5, title: "Contágio para Spot", icon: "\u{1F30A}", desc: "A queda nos futuros arrasta o preço à vista (spot) por arbitragem e pânico generalizado." },
+  { id: 6, title: "Espiral Descendente", icon: "\u{1F300}", desc: "Novas quedas geram mais margin calls \u2192 mais liquidações \u2192 mais quedas. Um ciclo vicioso de desalavancagem." },
+];
+
+/* ── PriceChart (Canvas) ────────────────────────────── */
+function PriceChart({ progress }) {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const padL=60, padR=30, padT=30, padB=50;
+    const chartW=W-padL-padR, chartH=H-padT-padB;
+    // grid
+    ctx.strokeStyle="rgba(148,163,184,0.15)"; ctx.lineWidth=1;
+    for(let i=0;i<=5;i++){const y=padT+(chartH/5)*i;ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();}
+    // Y labels
+    ctx.fillStyle="#94a3b8"; ctx.font="11px 'DM Mono',monospace"; ctx.textAlign="right";
+    const maxP=130,minP=20;
+    for(let i=0;i<=5;i++){const v=maxP-((maxP-minP)/5)*i;const y=padT+(chartH/5)*i;ctx.fillText("$"+v.toFixed(0),padL-8,y+4);}
+    // X labels
+    ctx.textAlign="center";
+    const vc=Math.ceil(progress*PRICE_DATA.length);
+    PRICE_DATA.forEach((d,i)=>{if(i>=vc)return;const x=padL+(i/(PRICE_DATA.length-1))*chartW;ctx.fillStyle="#64748b";ctx.fillText(d.date,x,H-12);});
+    if(vc<2)return;
+    const toX=i=>padL+(i/(PRICE_DATA.length-1))*chartW;
+    const toY=p=>padT+((maxP-p)/(maxP-minP))*chartH;
+    // area
+    ctx.beginPath();ctx.moveTo(toX(0),toY(PRICE_DATA[0].price));
+    for(let i=1;i<vc;i++){const pr=PRICE_DATA[i-1],cu=PRICE_DATA[i],cpX=(toX(i-1)+toX(i))/2;ctx.bezierCurveTo(cpX,toY(pr.price),cpX,toY(cu.price),toX(i),toY(cu.price));}
+    ctx.lineTo(toX(vc-1),padT+chartH);ctx.lineTo(toX(0),padT+chartH);ctx.closePath();
+    const lv=PRICE_DATA[vc-1];const grad=ctx.createLinearGradient(0,padT,0,padT+chartH);
+    if(lv.phase==="crash"||lv.phase==="recovery"){grad.addColorStop(0,"rgba(239,68,68,0.25)");grad.addColorStop(1,"rgba(239,68,68,0.02)");}
+    else{grad.addColorStop(0,"rgba(192,192,192,0.3)");grad.addColorStop(1,"rgba(192,192,192,0.02)");}
+    ctx.fillStyle=grad;ctx.fill();
+    // line
+    ctx.beginPath();ctx.moveTo(toX(0),toY(PRICE_DATA[0].price));
+    for(let i=1;i<vc;i++){const pr=PRICE_DATA[i-1],cu=PRICE_DATA[i],cpX=(toX(i-1)+toX(i))/2;ctx.bezierCurveTo(cpX,toY(pr.price),cpX,toY(cu.price),toX(i),toY(cu.price));}
+    ctx.strokeStyle=(lv.phase==="crash"||lv.phase==="recovery")?"#ef4444":"#c0c0c0";ctx.lineWidth=3;ctx.stroke();
+    // dots + labels
+    for(let i=0;i<vc;i++){const d=PRICE_DATA[i],x=toX(i),y=toY(d.price);
+      ctx.beginPath();ctx.arc(x,y,d.phase==="peak"?7:4,0,Math.PI*2);
+      ctx.fillStyle=d.phase==="peak"?"#fbbf24":d.phase==="crash"?"#ef4444":"#e2e8f0";ctx.fill();
+      ctx.strokeStyle="#1e293b";ctx.lineWidth=2;ctx.stroke();
+      if(d.phase==="peak"||(d.phase==="crash"&&d.price<80)||i===0){ctx.fillStyle=d.phase==="peak"?"#fbbf24":d.phase==="crash"?"#ef4444":"#94a3b8";ctx.font="bold 12px 'DM Mono',monospace";ctx.textAlign="center";ctx.fillText("$"+d.price.toFixed(2),x,y-14);}
+    }
+    // CME annotation
+    if(vc>=10){ctx.save();ctx.strokeStyle="#ef4444";ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(toX(9),padT);ctx.lineTo(toX(9),padT+chartH);ctx.stroke();ctx.setLineDash([]);ctx.restore();ctx.fillStyle="#ef4444";ctx.font="bold 11px 'DM Mono',monospace";ctx.textAlign="center";ctx.fillText("CME \u2191 MARGENS",toX(8.5)+20,padT+16);}
+  },[progress]);
+  return React.createElement("canvas",{ref:canvasRef,width:720,height:340,style:{width:"100%",height:"auto",borderRadius:8}});
+}
+
+/* ── MarginBar ──────────────────────────────────────── */
+function MarginBar({label,oldPct,newPct,active}){
+  return React.createElement("div",{style:{marginBottom:16}},[
+    React.createElement("div",{key:"h",style:{display:"flex",justifyContent:"space-between",marginBottom:6}},[
+      React.createElement("span",{key:"l",style:{color:"#e2e8f0",fontFamily:"'Playfair Display',serif",fontSize:15}},label),
+      React.createElement("span",{key:"v",style:{color:active?"#ef4444":"#94a3b8",fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:700}},oldPct+"% \u2192 "+newPct+"%")
+    ]),
+    React.createElement("div",{key:"bar",style:{position:"relative",height:28,background:"rgba(30,41,59,0.8)",borderRadius:6,overflow:"hidden"}},[
+      React.createElement("div",{key:"old",style:{position:"absolute",left:0,top:0,height:"100%",width:oldPct*4+"%",background:"linear-gradient(90deg,#475569,#64748b)",borderRadius:6,transition:"width 0.8s ease"}}),
+      React.createElement("div",{key:"new",style:{position:"absolute",left:0,top:0,height:"100%",width:active?newPct*4+"%":oldPct*4+"%",background:active?"linear-gradient(90deg,#dc2626,#ef4444)":"transparent",borderRadius:6,transition:"width 1s cubic-bezier(0.4,0,0.2,1)",boxShadow:active?"0 0 20px rgba(239,68,68,0.4)":"none"}}),
+      active&&React.createElement("div",{key:"stripe",style:{position:"absolute",left:oldPct*4+"%",top:0,height:"100%",width:(newPct-oldPct)*4+"%",background:"repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(239,68,68,0.3) 3px,rgba(239,68,68,0.3) 6px)",borderRadius:"0 6px 6px 0",animation:"pulse 1.5s ease-in-out infinite"}})
+    ])
+  ]);
+}
+
+/* ── MechanismCard ──────────────────────────────────── */
+function MechanismCard({step,active,completed}){
+  return React.createElement("div",{style:{display:"flex",alignItems:"flex-start",gap:16,padding:"16px 20px",
+    background:active?"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(30,41,59,0.9))":completed?"rgba(30,41,59,0.6)":"rgba(15,23,42,0.5)",
+    borderRadius:12,border:active?"1px solid rgba(239,68,68,0.4)":"1px solid rgba(71,85,105,0.3)",
+    transition:"all 0.5s ease",transform:active?"scale(1.02)":"scale(1)",opacity:!active&&!completed?0.4:1}},[
+    React.createElement("div",{key:"ic",style:{fontSize:28,minWidth:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",
+      background:active?"rgba(239,68,68,0.2)":"rgba(51,65,85,0.5)",borderRadius:10,transition:"all 0.4s ease"}},step.icon),
+    React.createElement("div",{key:"txt"},[
+      React.createElement("div",{key:"t",style:{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,
+        color:active?"#fca5a5":completed?"#cbd5e1":"#64748b",marginBottom:4}},step.id+". "+step.title),
+      React.createElement("div",{key:"d",style:{fontFamily:"'Source Sans 3',sans-serif",fontSize:13.5,
+        color:active?"#e2e8f0":"#94a3b8",lineHeight:1.5}},step.desc)
+    ])
+  ]);
+}
+
+/* ── DominoChain ────────────────────────────────────── */
+function DominoChain({activeStep}){
+  const labels=["Margem \u2191","Margin Call","Liquidação","Futuros \u2193","Spot \u2193","Espiral"];
+  return React.createElement("div",{style:{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:6,padding:"20px 0",minHeight:100}},
+    labels.map((lb,i)=>{
+      const fallen=i<activeStep, falling=i===activeStep;
+      return React.createElement("div",{key:i,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:6}},
+        React.createElement("div",{style:{width:48,height:70,
+          background:fallen?"linear-gradient(180deg,#991b1b,#7f1d1d)":falling?"linear-gradient(180deg,#dc2626,#b91c1c)":"linear-gradient(180deg,#475569,#334155)",
+          borderRadius:6,border:falling?"2px solid #fca5a5":"1px solid rgba(100,116,139,0.4)",
+          transform:fallen?"rotate(75deg) translateY(10px)":falling?"rotate(35deg) translateY(5px)":"rotate(0deg)",
+          transition:"all 0.6s cubic-bezier(0.4,0,0.2,1)",transformOrigin:"bottom center",
+          boxShadow:falling?"0 0 20px rgba(239,68,68,0.5)":"none",
+          display:"flex",alignItems:"center",justifyContent:"center"}},
+          React.createElement("span",{style:{color:fallen||falling?"#fecaca":"#94a3b8",fontSize:9,fontWeight:700,
+            fontFamily:"'DM Mono',monospace",textAlign:"center",padding:4,
+            transform:fallen?"rotate(-75deg)":falling?"rotate(-35deg)":"none",transition:"transform 0.6s ease"}},lb)
+        )
+      );
+    })
+  );
+}
+
+/* ── NavButton ──────────────────────────────────────── */
+function NavBtn({label,onClick,variant}){
+  const v=variant||"default";
+  return React.createElement("button",{onClick:onClick,
+    style:{padding:"10px 24px",borderRadius:8,
+      border:v==="primary"?"none":"1px solid rgba(148,163,184,0.3)",
+      background:v==="primary"?"linear-gradient(135deg,#b91c1c,#991b1b)":v==="ghost"?"transparent":"rgba(30,41,59,0.8)",
+      color:v==="primary"?"#fff":"#cbd5e1",fontFamily:"'Source Sans 3',sans-serif",fontSize:14,fontWeight:600,transition:"all 0.3s ease"}},label);
+}
+
+/* ── MAIN APP ───────────────────────────────────────── */
+function App(){
+  const [section,setSection]=useState(0);
+  const [chartProg,setChartProg]=useState(0);
+  const [mechStep,setMechStep]=useState(0);
+  const [marginOn,setMarginOn]=useState(false);
+  const [autoPlay,setAutoPlay]=useState(false);
+  const timer=useRef(null);
+
+  // auto chart
+  useEffect(()=>{
+    if(section===1&&autoPlay){
+      timer.current=setInterval(()=>{setChartProg(p=>{if(p>=1){clearInterval(timer.current);return 1;}return Math.min(p+0.08,1);});},400);
+      return()=>clearInterval(timer.current);
+    }
+  },[section,autoPlay]);
+
+  // auto mechanism
+  useEffect(()=>{
+    if(section===2&&autoPlay){
+      timer.current=setInterval(()=>{setMechStep(s=>{if(s>=MECHANISM_STEPS.length){clearInterval(timer.current);return MECHANISM_STEPS.length;}return s+1;});},2500);
+      return()=>clearInterval(timer.current);
+    }
+  },[section,autoPlay]);
+
+  const titles=["Introdução","Cronologia do Preço","Mecanismo de Contágio","Conclusão"];
+
+  /* ── render helpers ── */
+  const renderNav=()=>React.createElement("div",{style:{position:"sticky",top:0,zIndex:50,background:"rgba(15,23,42,0.85)",
+    backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(71,85,105,0.3)",padding:"12px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}},[
+    React.createElement("div",{key:"tabs",style:{display:"flex",gap:6,flexWrap:"wrap"}},
+      titles.map((t,i)=>React.createElement("button",{key:i,onClick:()=>{setSection(i);if(i===1){setChartProg(0);setAutoPlay(false);}if(i===2){setMechStep(0);setMarginOn(false);setAutoPlay(false);}},
+        style:{padding:"6px 14px",borderRadius:20,border:"none",background:section===i?"rgba(192,192,192,0.15)":"transparent",
+          color:section===i?"#e2e8f0":"#64748b",fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:section===i?600:400,cursor:"pointer",transition:"all 0.3s ease"}},
+        (i+1)+". "+t))
+    ),
+    React.createElement("div",{key:"brand",style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#64748b"}},"COPPEAD/UFRJ — Derivativos")
+  ]);
+
+  /* ── SECTION 0: Intro ── */
+  const renderIntro=()=>React.createElement("div",{style:{animation:"fadeIn 0.8s ease"}},[
+    React.createElement("div",{key:"hero",style:{textAlign:"center",marginBottom:40}},[
+      React.createElement("div",{key:"em",style:{fontSize:56,marginBottom:12,animation:"float 3s ease-in-out infinite"}},"\u{1FA99}"),
+      React.createElement("h1",{key:"h1",style:{fontFamily:"'Playfair Display',serif",fontSize:36,fontWeight:900,lineHeight:1.15,marginBottom:12,
+        background:"linear-gradient(135deg,#e2e8f0 0%,#c0c0c0 50%,#94a3b8 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}},"O Crash da Prata"),
+      React.createElement("h2",{key:"h2",style:{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:400,color:"#94a3b8",fontStyle:"italic",marginBottom:24}},
+        "Como o aumento de margens nos futuros derrubou o preço à vista em 40%"),
+      React.createElement("div",{key:"badge",style:{display:"inline-block",padding:"10px 20px",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,
+        fontFamily:"'DM Mono',monospace",fontSize:13,color:"#fca5a5"}},"Janeiro — Fevereiro 2026")
+    ]),
+    React.createElement("div",{key:"stats",style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14,marginBottom:32}},
+      [{l:"Pico Histórico",v:"$121,67/oz",s:"29 de janeiro",c:"#fbbf24"},{l:"Queda em 1 dia",v:"\u221231,4%",s:"30 de janeiro",c:"#ef4444"},{l:"Perda Total",v:"~\u221240%",s:"em 4 dias",c:"#ef4444"}].map((x,i)=>
+        React.createElement("div",{key:i,style:{background:"rgba(30,41,59,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:12,padding:"18px 14px",textAlign:"center"}},[
+          React.createElement("div",{key:"l",style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#64748b",marginBottom:8,textTransform:"uppercase",letterSpacing:1}},x.l),
+          React.createElement("div",{key:"v",style:{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,color:x.c,marginBottom:4}},x.v),
+          React.createElement("div",{key:"s",style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#94a3b8"}},x.s)
+        ])
+      )
+    ),
+    React.createElement("div",{key:"q",style:{background:"rgba(30,41,59,0.4)",borderRadius:12,padding:22,border:"1px solid rgba(71,85,105,0.2)",marginBottom:28}},[
+      React.createElement("h3",{key:"qt",style:{fontFamily:"'Playfair Display',serif",fontSize:17,marginBottom:10,color:"#cbd5e1"}},"\u{1F3AF} Pergunta-Chave"),
+      React.createElement("p",{key:"qp",style:{fontSize:15,lineHeight:1.7,color:"#94a3b8"}},
+        "Como uma decisão administrativa da CME — o simples aumento das margens de garantia — pode causar uma queda de ",
+        React.createElement("span",{style:{color:"#ef4444",fontWeight:700}},"40%"),
+        " no preço à vista de um metal precioso em apenas 4 dias?")
+    ]),
+    React.createElement("div",{key:"btn",style:{textAlign:"center"}},
+      React.createElement(NavBtn,{label:"Começar \u2192",onClick:()=>setSection(1),variant:"primary"}))
+  ]);
+
+  /* ── SECTION 1: Chart ── */
+  const renderChart=()=>React.createElement("div",{style:{animation:"fadeIn 0.8s ease"}},[
+    React.createElement("h2",{key:"t",style:{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,marginBottom:6}},"Cronologia do Preço da Prata"),
+    React.createElement("p",{key:"sub",style:{color:"#94a3b8",fontSize:13,marginBottom:20}},"Prata spot (US$/oz troy) — Janeiro a Fevereiro de 2026"),
+    React.createElement("div",{key:"chart",style:{background:"rgba(15,23,42,0.7)",borderRadius:12,padding:18,border:"1px solid rgba(71,85,105,0.3)",marginBottom:20}},
+      React.createElement(PriceChart,{progress:chartProg})),
+    React.createElement("div",{key:"ctrls",style:{display:"flex",gap:10,justifyContent:"center",alignItems:"center",marginBottom:28,flexWrap:"wrap"}},[
+      React.createElement(NavBtn,{key:"play",label:autoPlay?"\u23F8 Pausar":"\u25B6 Animar",onClick:()=>{if(!autoPlay)setChartProg(0);setAutoPlay(!autoPlay);},variant:"primary"}),
+      React.createElement(NavBtn,{key:"rst",label:"\u23EE Resetar",onClick:()=>{setChartProg(0);setAutoPlay(false);}}),
+      React.createElement("input",{key:"sl",type:"range",min:0,max:100,value:Math.round(chartProg*100),
+        onChange:e=>{setAutoPlay(false);setChartProg(e.target.value/100);},style:{width:140,accentColor:"#c0c0c0"}})
+    ]),
+    React.createElement("div",{key:"evts",style:{display:"flex",flexDirection:"column",gap:10}},
+      TIMELINE_EVENTS.map((evt,i)=>{
+        const vis=chartProg>(i===0?0.15:i===1?0.65:i===2?0.72:i===3?0.78:0.88);
+        return React.createElement("div",{key:i,style:{display:"flex",gap:14,padding:"12px 16px",
+          background:evt.phase==="crash"?"rgba(239,68,68,0.08)":evt.phase==="peak"?"rgba(251,191,36,0.08)":"rgba(30,41,59,0.4)",
+          borderRadius:10,border:"1px solid "+(evt.phase==="crash"?"rgba(239,68,68,0.2)":evt.phase==="peak"?"rgba(251,191,36,0.2)":"rgba(71,85,105,0.2)"),
+          opacity:vis?1:0.2,transform:vis?"translateX(0)":"translateX(-20px)",transition:"all 0.6s ease"}},[
+          React.createElement("span",{key:"i",style:{fontSize:22}},evt.icon),
+          React.createElement("div",{key:"c"},[
+            React.createElement("div",{key:"h",style:{display:"flex",gap:10,alignItems:"baseline",marginBottom:3}},[
+              React.createElement("span",{key:"d",style:{fontFamily:"'DM Mono',monospace",fontSize:11,color:"#64748b"}},evt.date),
+              React.createElement("span",{key:"t",style:{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#e2e8f0"}},evt.title)
+            ]),
+            React.createElement("p",{key:"p",style:{fontSize:12.5,color:"#94a3b8",lineHeight:1.5,margin:0}},evt.desc)
+          ])
+        ]);
+      })
+    ),
+    React.createElement("div",{key:"nav",style:{display:"flex",gap:12,justifyContent:"space-between",marginTop:28}},[
+      React.createElement(NavBtn,{key:"b",label:"\u2190 Introdução",onClick:()=>setSection(0),variant:"ghost"}),
+      React.createElement(NavBtn,{key:"n",label:"Mecanismo \u2192",onClick:()=>{setSection(2);setMechStep(0);setMarginOn(false);setAutoPlay(false);},variant:"primary"})
+    ])
+  ]);
+
+  /* ── SECTION 2: Mechanism ── */
+  const renderMechanism=()=>React.createElement("div",{style:{animation:"fadeIn 0.8s ease"}},[
+    React.createElement("h2",{key:"t",style:{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,marginBottom:6}},"Mecanismo de Contágio"),
+    React.createElement("p",{key:"s",style:{color:"#94a3b8",fontSize:13,marginBottom:20}},"Como o aumento de margens nos futuros contamina o preço spot"),
+    // margin bars
+    React.createElement("div",{key:"mb",style:{background:"rgba(15,23,42,0.7)",borderRadius:12,padding:22,border:"1px solid rgba(71,85,105,0.3)",marginBottom:20}},[
+      React.createElement("div",{key:"mh",style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}},[
+        React.createElement("h3",{key:"mt",style:{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#cbd5e1",margin:0}},"Margens Exigidas pela CME"),
+        React.createElement(NavBtn,{key:"ms",label:marginOn?"\u2713 Margens Elevadas":"Simular Aumento \u2191",onClick:()=>setMarginOn(!marginOn),variant:marginOn?"default":"primary"})
+      ]),
+      React.createElement(MarginBar,{key:"s",label:"Prata (SI)",oldPct:11,newPct:15,active:marginOn}),
+      React.createElement(MarginBar,{key:"g",label:"Ouro (GC)",oldPct:6,newPct:8,active:marginOn}),
+      marginOn&&React.createElement("div",{key:"warn",style:{marginTop:12,padding:"12px 16px",background:"rgba(239,68,68,0.1)",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",animation:"fadeIn 0.5s ease"}},
+        React.createElement("p",{style:{color:"#fca5a5",fontSize:13,margin:0,lineHeight:1.6}},
+          "\u26A0\uFE0F Impacto imediato: Cada contrato de prata agora exige ~36% mais garantias. Um especulador com posição de $1M precisa depositar $40.000 adicionais — imediatamente."))
+    ]),
+    // domino
+    React.createElement("div",{key:"dom",style:{background:"rgba(15,23,42,0.7)",borderRadius:12,padding:18,border:"1px solid rgba(71,85,105,0.3)",marginBottom:20}},[
+      React.createElement("h3",{key:"dt",style:{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#cbd5e1",margin:"0 0 6px 0"}},"Efeito Dominó"),
+      React.createElement(DominoChain,{key:"dc",activeStep:mechStep})
+    ]),
+    // steps
+    React.createElement("div",{key:"steps",style:{display:"flex",flexDirection:"column",gap:10,marginBottom:20}},
+      MECHANISM_STEPS.map((st,i)=>React.createElement(MechanismCard,{key:st.id,step:st,active:mechStep===i+1,completed:mechStep>i+1}))
+    ),
+    // controls
+    React.createElement("div",{key:"ctrls",style:{display:"flex",gap:10,justifyContent:"center",marginBottom:28,flexWrap:"wrap"}},[
+      React.createElement(NavBtn,{key:"ap",label:autoPlay?"\u23F8 Pausar":"\u25B6 Animar Passos",onClick:()=>{if(!autoPlay){setMechStep(0);setMarginOn(true);}setAutoPlay(!autoPlay);},variant:"primary"}),
+      React.createElement(NavBtn,{key:"pb",label:"Passo \u2190",onClick:()=>setMechStep(Math.max(0,mechStep-1))}),
+      React.createElement(NavBtn,{key:"pf",label:"Passo \u2192",onClick:()=>{setMarginOn(true);setMechStep(Math.min(MECHANISM_STEPS.length,mechStep+1));}}),
+      React.createElement(NavBtn,{key:"rs",label:"\u23EE Resetar",onClick:()=>{setMechStep(0);setMarginOn(false);setAutoPlay(false);}})
+    ]),
+    React.createElement("div",{key:"nav",style:{display:"flex",gap:12,justifyContent:"space-between"}},[
+      React.createElement(NavBtn,{key:"b",label:"\u2190 Cronologia",onClick:()=>setSection(1),variant:"ghost"}),
+      React.createElement(NavBtn,{key:"n",label:"Conclusão \u2192",onClick:()=>setSection(3),variant:"primary"})
+    ])
+  ]);
+
+  /* ── SECTION 3: Summary ── */
+  const renderSummary=()=>React.createElement("div",{style:{animation:"fadeIn 0.8s ease"}},[
+    React.createElement("h2",{key:"t",style:{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,marginBottom:20}},"Lições para o Mercado de Derivativos"),
+    React.createElement("div",{key:"main",style:{background:"linear-gradient(135deg,rgba(239,68,68,0.08),rgba(30,41,59,0.8))",borderRadius:16,padding:28,border:"1px solid rgba(239,68,68,0.2)",marginBottom:28}},[
+      React.createElement("div",{key:"ic",style:{fontSize:44,textAlign:"center",marginBottom:16}},"\u2696\uFE0F"),
+      React.createElement("h3",{key:"h",style:{fontFamily:"'Playfair Display',serif",fontSize:20,textAlign:"center",marginBottom:18,color:"#e2e8f0"}},"Margens: O \"Disjuntor\" do Mercado"),
+      React.createElement("div",{key:"items",style:{display:"flex",flexDirection:"column",gap:14}},
+        [{t:"Função Prudencial",x:"As margens existem para proteger a integridade da câmara de compensação (clearinghouse), garantindo que as perdas de uma parte possam ser cobertas.",c:"#60a5fa"},
+         {t:"Poder de Mercado",x:"Em mercados superalavancados, o aumento de margens atua como um \"reset mecânico\" — forçando a desalavancagem abrupta de posições especulativas.",c:"#fbbf24"},
+         {t:"Transmissão Futuros \u2192 Spot",x:"O vínculo de arbitragem entre futuros e spot garante que choques no mercado de derivativos se transmitam rapidamente para o preço à vista do ativo.",c:"#ef4444"},
+         {t:"Espiral de Desalavancagem",x:"Margin calls \u2192 liquidações \u2192 queda de preço \u2192 novos margin calls. Este ciclo vicioso amplifica enormemente o choque inicial.",c:"#a78bfa"}
+        ].map((item,i)=>React.createElement("div",{key:i,style:{padding:"14px 18px",background:"rgba(15,23,42,0.5)",borderRadius:10,borderLeft:"3px solid "+item.c}},[
+          React.createElement("div",{key:"t",style:{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:item.c,marginBottom:5}},item.t),
+          React.createElement("p",{key:"p",style:{fontSize:13.5,color:"#cbd5e1",lineHeight:1.6,margin:0}},item.x)
+        ]))
+      )
+    ]),
+    React.createElement("div",{key:"hist",style:{background:"rgba(30,41,59,0.5)",borderRadius:12,padding:22,border:"1px solid rgba(71,85,105,0.3)",marginBottom:28}},[
+      React.createElement("h3",{key:"ht",style:{fontFamily:"'Playfair Display',serif",fontSize:17,marginBottom:10,color:"#cbd5e1"}},"\u{1F4D0} Analogia Histórica"),
+      React.createElement("p",{key:"hp",style:{fontSize:13.5,color:"#94a3b8",lineHeight:1.7}},
+        "O episódio evoca paralelos com o crash da prata de 1980, quando os irmãos Hunt tentaram encurralar o mercado. Naquela ocasião, a COMEX também elevou dramaticamente as margens e restringiu compras especulativas, causando uma queda de ~80% no preço do metal. A lição se repete: ",
+        React.createElement("strong",{style:{color:"#e2e8f0"}},"as regras do mercado de derivativos podem ser mais poderosas que a oferta e demanda do ativo subjacente."))
+    ]),
+    React.createElement("div",{key:"nav",style:{display:"flex",gap:12,justifyContent:"space-between"}},[
+      React.createElement(NavBtn,{key:"b",label:"\u2190 Mecanismo",onClick:()=>setSection(2),variant:"ghost"}),
+      React.createElement(NavBtn,{key:"r",label:"\u{1F504} Reiniciar",onClick:()=>{setSection(0);setChartProg(0);setMechStep(0);setMarginOn(false);setAutoPlay(false);},variant:"primary"})
+    ])
+  ]);
+
+  /* ── MAIN RENDER ── */
+  return React.createElement("div",{style:{minHeight:"100vh",background:"linear-gradient(160deg,#0f172a 0%,#1e1b2e 40%,#1a1520 100%)",color:"#e2e8f0",
+    fontFamily:"'Source Sans 3',sans-serif",position:"relative",overflow:"hidden"}},[
+    React.createElement("div",{key:"bg",style:{position:"fixed",top:0,left:0,right:0,bottom:0,
+      backgroundImage:"radial-gradient(circle at 20% 30%,rgba(192,192,192,0.04) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(239,68,68,0.03) 0%,transparent 50%)",
+      pointerEvents:"none"}}),
+    renderNav(),
+    React.createElement("div",{key:"content",style:{maxWidth:780,margin:"0 auto",padding:"32px 20px"}},[
+      section===0&&renderIntro(),
+      section===1&&renderChart(),
+      section===2&&renderMechanism(),
+      section===3&&renderSummary()
+    ]),
+    React.createElement("div",{key:"footer",style:{textAlign:"center",padding:"20px 0",borderTop:"1px solid rgba(71,85,105,0.2)",marginTop:32}},
+      React.createElement("p",{style:{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#475569"}},"Material Pedagógico — Derivativos e Gestão de Risco — COPPEAD/UFRJ"))
+  ]);
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
